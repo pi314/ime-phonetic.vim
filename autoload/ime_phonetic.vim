@@ -6,7 +6,7 @@ function! s:Handler (matchobj, trigger)
         let s:table = phonetic_table#table()
     endif
 
-    call boshiamy#log('phonetic', a:matchobj)
+    call ime#log('phonetic', a:matchobj)
     if a:trigger == '<space>'
         return get(s:table, a:matchobj[0], [])
     else
