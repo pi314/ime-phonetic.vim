@@ -1,13 +1,17 @@
 let s:table = {}
-let s:symbols = split('ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦˇˋˊ˙', '\zs')
-let s:sounds = split('1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/-3467', '\zs')
+
+let s:symbols = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦˇˋˊ˙'
+let s:sounds = '1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/-3467'
+
+let s:symbol_set = split(s:symbols, '\zs')
+let s:sound_set = split(s:sounds, '\zs')
 let s:symbol_sound_map = {}
 
 
 function! s:Init ()
-    for l:idx in range(len(s:symbols))
-        let s:symbol_sound_map[s:symbols[l:idx]] = s:sounds[l:idx]
-        let s:symbol_sound_map[s:sounds[l:idx]] = s:symbols[l:idx]
+    for l:idx in range(len(s:symbol_set))
+        let s:symbol_sound_map[s:symbol_set[l:idx]] = s:sound_set[l:idx]
+        let s:symbol_sound_map[s:sound_set[l:idx]] = s:symbol_set[l:idx]
     endfor
     let s:symbol_sound_map['<space>'] = ' '
     let s:symbol_sound_map[' '] = ' '
@@ -32,7 +36,7 @@ function! s:Handler (matchobj, trigger)
     if l:symbol_str == ' '
         return []
     endif
-    return [l:symbol_str]
+    return [l:symbol_str] + get(s:table, s:Symbol2Sound(l:symbol_str), [])
 endfunction
 
 
@@ -42,8 +46,8 @@ function! ime_phonetic#info ()
     \ 'type': 'standalone',
     \ 'icon': '[注]',
     \ 'description': 'Phonetic input mode',
-    \ 'pattern':  '\v(|[^ ][ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦˇˋˊ˙ ]*)$',
+    \ 'pattern':  '\v(|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('s:Handler'),
-    \ 'trigger': split('1234567890abcdefghijklmnopqrstuvwxyz-;,./', '\zs') + ['<space>'],
+    \ 'trigger': split(s:sounds, '\zs') + ['<space>'],
     \ }
 endfunction
