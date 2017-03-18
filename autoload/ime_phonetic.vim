@@ -6,6 +6,8 @@ function! s:Handler (matchobj, trigger)
         let s:table = phonetic_table#table()
     endif
 
+    return s:table[a:trigger]
+
     call ime#log('phonetic', a:matchobj)
     if a:trigger == '<space>'
         return get(s:table, a:matchobj[0], [])
@@ -22,6 +24,6 @@ function! ime_phonetic#info ()
     \ 'description': 'Phonetic input mode',
     \ 'pattern':  '\v(%(\w|\d|[/;,.-])*)$',
     \ 'handler': function('s:Handler'),
-    \ 'trigger': ['3', '4', '6', '7', '<space>'],
+    \ 'trigger': split('1234567890abcdefghijklmnopqrstuvwxyz-;,./', '\zs'),
     \ }
 endfunction
