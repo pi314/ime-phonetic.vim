@@ -32,11 +32,14 @@ function! s:Handler (matchobj, trigger)
         let s:table = phonetic_table#table()
     endif
 
+    call ime#log('phonetic', a:matchobj)
     let l:symbol_str = a:matchobj[0] . s:symbol_code_map[a:trigger]
+    call ime#log('phonetic', l:symbol_str)
     if l:symbol_str == ' '
         return []
     endif
-    return [l:symbol_str] + get(s:table, s:Symbol2Code(l:symbol_str), [])
+    let l:result = get(s:table, s:Symbol2Code(l:symbol_str), [])
+    return [l:symbol_str] + get(l:result, '', [])
 endfunction
 
 
