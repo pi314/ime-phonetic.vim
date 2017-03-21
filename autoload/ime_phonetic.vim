@@ -135,8 +135,8 @@ function! ime_phonetic#handler (matchobj, trigger)
         endif
     endwhile
 
-    if has_key(l:probe, ' ')
-        return [(l:symbol_str)] + l:probe[' ']
+    if has_key(l:probe, '_')
+        return [(l:symbol_str)] + l:probe['_']
     endif
     return [(l:symbol_str)]
 endfunction
