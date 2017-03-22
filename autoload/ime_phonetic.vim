@@ -127,6 +127,23 @@ function! s:GetAllKeysInTableWithPrefix (tb, prefix)
 endfunction
 
 
+function! s:CollectResults (match_leaves, fuzzy_leaves, probes) " {{{
+    let l:result = []
+    for l:leaf in a:match_leaves
+        let l:result += l:leaf
+    endfor
+    for l:leaf in a:fuzzy_leaves
+        let l:result += l:leaf
+    endfor
+    for l:probe in a:probes
+        if has_key(l:probe, '_')
+            let l:result += l:probe['_']
+        endif
+    endfor
+    return l:result
+endfunction " }}}
+
+
 function! ime_phonetic#handler (matchobj, trigger)
     if s:table == {}
         let s:table = phonetic_table#table()
@@ -158,7 +175,7 @@ function! ime_phonetic#handler (matchobj, trigger)
     let l:match_leaves = []     " results that prefectly match
     for l:idx in range(len(l:code_list))
         let l:code = l:code_list[(l:idx)]
-        let l:tmp_probe = []
+        let l:tmp_probes = []
 
         " Keep last results for fallback match
         let l:last_leaves = l:match_leaves + l:fuzzy_leaves
@@ -179,37 +196,22 @@ function! ime_phonetic#handler (matchobj, trigger)
                     endif
                 else
                     " Found a subtree
-                    let l:slot = l:tmp_probe
+                    let l:slot = l:tmp_probes
                 endif
                 call add(l:slot, l:probe[(l:key)])
             endfor
         endfor
 
-        let l:probes = l:tmp_probe
         " Suddenly no result, use fallback result
-        if len(l:probes) + len(l:match_leaves) + len(l:fuzzy_leaves) == 0
-            let l:result = []
-            for l:leaf in l:last_leaves
-                let l:result += l:leaf
-            endfor
+        if len(l:tmp_probes) + len(l:match_leaves) + len(l:fuzzy_leaves) == 0
+            let l:result = s:CollectResults(l:last_leaves, [], l:probes)
             let l:remain_code_str = s:CodeList2SymbolStr(l:code_list[(l:idx):])
             return [(l:symbol_str)] + map(l:result, 'v:val . l:remain_code_str')
         endif
+        let l:probes = l:tmp_probes
     endfor
 
-    let l:result = []
-    for l:leaf in l:match_leaves
-        let l:result += l:leaf
-    endfor
-    for l:leaf in l:fuzzy_leaves
-        let l:result += l:leaf
-    endfor
-    for l:probe in l:probes
-        if has_key(l:probe, '_')
-            let l:result += l:probe['_']
-        endif
-    endfor
-
+    let l:result = s:CollectResults(l:match_leaves, l:fuzzy_leaves, l:probes)
     if len(l:result) == 1 && len(l:match_leaves) == 1
         " Only one possibility, put it first
         return l:result + [(l:symbol_str)]
