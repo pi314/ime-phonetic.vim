@@ -143,16 +143,26 @@ function! ime_phonetic#handler (matchobj, trigger)
     endif
 
     let l:probes = [s:table]
-    let l:leaves = []
+    let l:fuzzy_leaves = []
+    let l:match_leaves = []
     while l:code_list != []
         let l:code = l:code_list[0]
         call remove(l:code_list, 0)
 
         let l:tmp_probe = []
-        let l:leaves = []
+        let l:fuzzy_leaves = []
+        let l:match_leaves = []
         for l:probe in l:probes
             for l:key in s:GetAllKeysInTableWithPrefix(l:probe, l:code)
-                let l:slot = (type(l:probe[(l:key)]) == type([])) ? l:leaves : l:tmp_probe
+                if type(l:probe[(l:key)]) == type([])
+                    if l:key == l:code
+                        let l:slot = l:match_leaves
+                    else
+                        let l:slot = l:fuzzy_leaves
+                    endif
+                else
+                    let l:slot = l:tmp_probe
+                endif
                 call add(l:slot, l:probe[(l:key)])
             endfor
         endfor
@@ -161,7 +171,10 @@ function! ime_phonetic#handler (matchobj, trigger)
     endwhile
 
     let l:result = []
-    for l:leaf in l:leaves
+    for l:leaf in l:match_leaves
+        let l:result += l:leaf
+    endfor
+    for l:leaf in l:fuzzy_leaves
         let l:result += l:leaf
     endfor
     for l:probe in l:probes
@@ -169,7 +182,11 @@ function! ime_phonetic#handler (matchobj, trigger)
             let l:result += l:probe['_']
         endif
     endfor
-    return [(l:symbol_str)] + l:result
+    if len(l:result) == 1 && len(l:match_leaves) == 1
+        return l:result + [(l:symbol_str)]
+    else
+        return [(l:symbol_str)] + l:result
+    endif
 endfunction
 
 
