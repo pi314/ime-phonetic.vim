@@ -108,6 +108,20 @@ function! Test_CodeList2SymbolStr () " {{{
 endfunction " }}}
 
 
+function! s:QuerySingleChar (code) " {{{
+    if has_key(s:table, a:code)
+        let l:tb = s:table[(a:code)]
+        return (type(l:tb) == type([])) ? (l:tb) : (l:tb['_'])
+    endif
+    return []
+endfunction " }}}
+
+
+function! s:GetAllKeysInTableWithPrefix (tb, prefix)
+    return filter(keys(a:tb), 'strpart(v:val, 0, strlen(a:prefix)) == a:prefix')
+endfunction
+
+
 function! ime_phonetic#handler (matchobj, trigger)
     if s:table == {}
         let s:table = phonetic_table#table()
@@ -119,26 +133,38 @@ function! ime_phonetic#handler (matchobj, trigger)
     endif
 
     let l:code_list = s:SymbolStr2Code(l:symbol_str)
-    let l:probe = s:table
+    if len(l:code_list) == 1
+        return [(l:symbol_str)] + s:QuerySingleChar(l:code_list[0])
+    endif
+
+    let l:probes = [s:table]
+    let l:leaves = []
     while l:code_list != []
         let l:code = l:code_list[0]
         call remove(l:code_list, 0)
 
-        if !has_key(l:probe, l:code)
-            return [(l:symbol_str)]
-        endif
+        let l:tmp_probe = []
+        let l:leaves = []
+        for l:probe in l:probes
+            for l:key in s:GetAllKeysInTableWithPrefix(l:probe, l:code)
+                let l:slot = (type(l:probe[(l:key)]) == type([])) ? l:leaves : l:tmp_probe
+                call add(l:slot, l:probe[(l:key)])
+            endfor
+        endfor
 
-        if type(l:probe[l:code]) == type({})
-            let l:probe = l:probe[l:code]
-        else
-            return [(l:symbol_str)] + map(copy(l:probe[l:code]), 'v:val . s:CodeList2SymbolStr(l:code_list)')
-        endif
+        let l:probes = l:tmp_probe
     endwhile
 
-    if has_key(l:probe, '_')
-        return [(l:symbol_str)] + l:probe['_']
-    endif
-    return [(l:symbol_str)]
+    let l:result = []
+    for l:leaf in l:leaves
+        let l:result += l:leaf
+    endfor
+    for l:probe in l:probes
+        if has_key(l:probe, '_')
+            let l:result += l:probe['_']
+        endif
+    endfor
+    return [(l:symbol_str)] + l:result
 endfunction
 
 
