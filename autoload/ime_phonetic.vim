@@ -87,13 +87,13 @@ endfunction
 function! Test_Symbol2Code () " {{{
     call s:log('[Test] SymbolStr2Code()')
     call s:Init()
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋ'), ['hk4'], 1)
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋㄕˋ'), ['hk4', 'g4'], 2)
-    call AssertEqual(s:SymbolStr2Code('ㄕㄘㄜˋ'), ['g', 'hk4'], 3)
-    call AssertEqual(s:SymbolStr2Code('ㄕㄘˋㄜ'), ['g', 'hk4'], 4)
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'), ['hk4', 'g4', '5j/ ', 'jp6'], 5)
-    call AssertEqual(s:SymbolStr2Code('ㄉㄨ'), ['2j'], 6)
-    call AssertEqual(s:SymbolStr2Code('ㄨㄉ'), ['j', '2'], 7)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋ'), ['hk4'], 1)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋㄕˋ'), ['hk4', 'g4'], 2)
+    call assert_equal(s:SymbolStr2Code('ㄕㄘㄜˋ'), ['g', 'hk4'], 3)
+    call assert_equal(s:SymbolStr2Code('ㄕㄘˋㄜ'), ['g', 'hk4'], 4)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'), ['hk4', 'g4', '5j/ ', 'jp6'], 5)
+    call assert_equal(s:SymbolStr2Code('ㄉㄨ'), ['2j'], 6)
+    call assert_equal(s:SymbolStr2Code('ㄨㄉ'), ['j', '2'], 7)
     call s:log('[Test] SymbolStr2Code() ends')
 endfunction " }}}
 
@@ -104,11 +104,11 @@ endfunction
 function! Test_CodeList2SymbolStr () " {{{
     call s:log('[Test] CodeList2SymbolStr()')
     call s:Init()
-    call AssertEqual(s:CodeList2SymbolStr([]), '', 1)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4']), 'ㄘㄜˋ', 1)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4', 'g4']), 'ㄘㄜˋㄕˋ', 2)
-    call AssertEqual(s:CodeList2SymbolStr(['g ', 'hk4']), 'ㄕ ㄘㄜˋ', 3)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4', 'g4', '5j/ ', 'jp6']), 'ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ', 4)
+    call assert_equal(s:CodeList2SymbolStr([]), '', 1)
+    call assert_equal(s:CodeList2SymbolStr(['hk4']), 'ㄘㄜˋ', 1)
+    call assert_equal(s:CodeList2SymbolStr(['hk4', 'g4']), 'ㄘㄜˋㄕˋ', 2)
+    call assert_equal(s:CodeList2SymbolStr(['g ', 'hk4']), 'ㄕ ㄘㄜˋ', 3)
+    call assert_equal(s:CodeList2SymbolStr(['hk4', 'g4', '5j/ ', 'jp6']), 'ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ', 4)
     call s:log('[Test] CodeList2SymbolStr() ends')
 endfunction " }}}
 
@@ -132,35 +132,53 @@ function! ime_phonetic#handler (matchobj, trigger)
         let s:table = phonetic_table#table()
     endif
 
-    let l:symbol_str = a:matchobj[0] . s:symbol_code_map[a:trigger]
+    let l:symbol_str = a:matchobj[0]
+
+    " The single quote key only triggers the handler,
+    " not insert any chars
+    if a:trigger != ''''
+        let l:symbol_str .= s:symbol_code_map[a:trigger]
+    endif
+
+    " No phonetic symbol given, return []
     if l:symbol_str == ' '
         return []
     endif
 
     let l:code_list = s:SymbolStr2Code(l:symbol_str)
+
+    " Special case for single character: no speed input
     if len(l:code_list) == 1
         return [(l:symbol_str)] + s:QuerySingleChar(l:code_list[0])
     endif
 
-    let l:probes = [s:table]
-    let l:fuzzy_leaves = []
-    let l:match_leaves = []
-    while l:code_list != []
-        let l:code = l:code_list[0]
-        call remove(l:code_list, 0)
-
+    let l:probes = [s:table]    " fuzzy BFS search range
+    let l:last_leaves = []      " fallback results
+    let l:fuzzy_leaves = []     " results that matches prefix
+    let l:match_leaves = []     " results that prefectly match
+    for l:idx in range(len(l:code_list))
+        let l:code = l:code_list[(l:idx)]
         let l:tmp_probe = []
+
+        " Keep last results for fallback match
+        let l:last_leaves = l:match_leaves + l:fuzzy_leaves
+
         let l:fuzzy_leaves = []
         let l:match_leaves = []
+
+        " Do BFS
         for l:probe in l:probes
+            " Iterate over all prefix-matched keys
             for l:key in s:GetAllKeysInTableWithPrefix(l:probe, l:code)
                 if type(l:probe[(l:key)]) == type([])
+                    " Found a subtree that has no subtree
                     if l:key == l:code
                         let l:slot = l:match_leaves
                     else
                         let l:slot = l:fuzzy_leaves
                     endif
                 else
+                    " Found a subtree
                     let l:slot = l:tmp_probe
                 endif
                 call add(l:slot, l:probe[(l:key)])
@@ -168,7 +186,16 @@ function! ime_phonetic#handler (matchobj, trigger)
         endfor
 
         let l:probes = l:tmp_probe
-    endwhile
+        " Suddenly no result, use fallback result
+        if len(l:probes) + len(l:match_leaves) + len(l:fuzzy_leaves) == 0
+            let l:result = []
+            for l:leaf in l:last_leaves
+                let l:result += l:leaf
+            endfor
+            let l:remain_code_str = s:CodeList2SymbolStr(l:code_list[(l:idx):])
+            return [(l:symbol_str)] + map(l:result, 'v:val . l:remain_code_str')
+        endif
+    endfor
 
     let l:result = []
     for l:leaf in l:match_leaves
@@ -182,7 +209,9 @@ function! ime_phonetic#handler (matchobj, trigger)
             let l:result += l:probe['_']
         endif
     endfor
+
     if len(l:result) == 1 && len(l:match_leaves) == 1
+        " Only one possibility, put it first
         return l:result + [(l:symbol_str)]
     else
         return [(l:symbol_str)] + l:result
@@ -198,6 +227,6 @@ function! ime_phonetic#info ()
     \ 'description': 'Phonetic input mode',
     \ 'pattern':  '\v%(|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
-    \ 'trigger': split(s:codes, '\zs') + ['<space>'],
+    \ 'trigger': split(s:codes, '\zs') + ['<space>', ''''],
     \ }
 endfunction
