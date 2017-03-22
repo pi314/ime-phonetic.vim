@@ -158,7 +158,7 @@ function! ime_phonetic#handler (matchobj, trigger)
     endif
 
     " No phonetic symbol given, return []
-    if l:symbol_str == ' '
+    if l:symbol_str == ' ' || l:symbol_str == ''
         return []
     endif
 
