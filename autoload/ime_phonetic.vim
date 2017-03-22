@@ -70,13 +70,16 @@ function! s:SymbolStr2Code (symbol_str)
     let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
     let l:rtrn = []
     let l:acc = ['', '', '', '']
+    let l:water_level = -1
     for l:code in l:code_list
         let l:pos = s:code_pos[l:code]
-        if l:acc[l:pos] != ''
+        if l:pos <= l:water_level
             call add(l:rtrn, join(l:acc, ''))
             let l:acc = ['', '', '', '']
+            let l:water_level = -1
         endif
         let l:acc[l:pos] = l:code
+        let l:water_level = l:pos
     endfor
     call add(l:rtrn, join(l:acc, ''))
     return l:rtrn
@@ -89,6 +92,8 @@ function! Test_Symbol2Code () " {{{
     call AssertEqual(s:SymbolStr2Code('ㄕㄘㄜˋ'), ['g', 'hk4'], 3)
     call AssertEqual(s:SymbolStr2Code('ㄕㄘˋㄜ'), ['g', 'hk4'], 4)
     call AssertEqual(s:SymbolStr2Code('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'), ['hk4', 'g4', '5j/ ', 'jp6'], 5)
+    call AssertEqual(s:SymbolStr2Code('ㄉㄨ'), ['2j'], 6)
+    call AssertEqual(s:SymbolStr2Code('ㄨㄉ'), ['j', '2'], 7)
     call s:log('[Test] SymbolStr2Code() ends')
 endfunction " }}}
 
