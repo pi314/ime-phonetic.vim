@@ -70,13 +70,16 @@ function! s:SymbolStr2Code (symbol_str)
     let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
     let l:rtrn = []
     let l:acc = ['', '', '', '']
+    let l:water_level = -1
     for l:code in l:code_list
         let l:pos = s:code_pos[l:code]
-        if l:acc[l:pos] != ''
+        if l:pos <= l:water_level
             call add(l:rtrn, join(l:acc, ''))
             let l:acc = ['', '', '', '']
+            let l:water_level = -1
         endif
         let l:acc[l:pos] = l:code
+        let l:water_level = l:pos
     endfor
     call add(l:rtrn, join(l:acc, ''))
     return l:rtrn
@@ -84,11 +87,13 @@ endfunction
 function! Test_Symbol2Code () " {{{
     call s:log('[Test] SymbolStr2Code()')
     call s:Init()
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋ'), ['hk4'], 1)
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋㄕˋ'), ['hk4', 'g4'], 2)
-    call AssertEqual(s:SymbolStr2Code('ㄕㄘㄜˋ'), ['g', 'hk4'], 3)
-    call AssertEqual(s:SymbolStr2Code('ㄕㄘˋㄜ'), ['g', 'hk4'], 4)
-    call AssertEqual(s:SymbolStr2Code('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'), ['hk4', 'g4', '5j/ ', 'jp6'], 5)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋ'), ['hk4'], 1)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋㄕˋ'), ['hk4', 'g4'], 2)
+    call assert_equal(s:SymbolStr2Code('ㄕㄘㄜˋ'), ['g', 'hk4'], 3)
+    call assert_equal(s:SymbolStr2Code('ㄕㄘˋㄜ'), ['g', 'hk4'], 4)
+    call assert_equal(s:SymbolStr2Code('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'), ['hk4', 'g4', '5j/ ', 'jp6'], 5)
+    call assert_equal(s:SymbolStr2Code('ㄉㄨ'), ['2j'], 6)
+    call assert_equal(s:SymbolStr2Code('ㄨㄉ'), ['j', '2'], 7)
     call s:log('[Test] SymbolStr2Code() ends')
 endfunction " }}}
 
@@ -99,12 +104,80 @@ endfunction
 function! Test_CodeList2SymbolStr () " {{{
     call s:log('[Test] CodeList2SymbolStr()')
     call s:Init()
-    call AssertEqual(s:CodeList2SymbolStr([]), '', 1)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4']), 'ㄘㄜˋ', 1)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4', 'g4']), 'ㄘㄜˋㄕˋ', 2)
-    call AssertEqual(s:CodeList2SymbolStr(['g ', 'hk4']), 'ㄕ ㄘㄜˋ', 3)
-    call AssertEqual(s:CodeList2SymbolStr(['hk4', 'g4', '5j/ ', 'jp6']), 'ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ', 4)
+    call assert_equal(s:CodeList2SymbolStr([]), '', 1)
+    call assert_equal(s:CodeList2SymbolStr(['hk4']), 'ㄘㄜˋ', 1)
+    call assert_equal(s:CodeList2SymbolStr(['hk4', 'g4']), 'ㄘㄜˋㄕˋ', 2)
+    call assert_equal(s:CodeList2SymbolStr(['g ', 'hk4']), 'ㄕ ㄘㄜˋ', 3)
+    call assert_equal(s:CodeList2SymbolStr(['hk4', 'g4', '5j/ ', 'jp6']), 'ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ', 4)
     call s:log('[Test] CodeList2SymbolStr() ends')
+endfunction " }}}
+
+
+function! s:QuerySingleChar (code) " {{{
+    if has_key(s:table, a:code)
+        let l:tb = s:table[(a:code)]
+        return (type(l:tb) == type([])) ? (l:tb) : (l:tb['_'])
+    endif
+    return []
+endfunction " }}}
+
+
+function! s:GetAllKeysInTableWithPrefix (tb, prefix)
+    return filter(keys(a:tb), 'strpart(v:val, 0, strlen(a:prefix)) == a:prefix')
+endfunction
+
+
+function! s:BFS_WithCode(code, probe, m_probes, f_probes, m_leaves, f_leaves) " {{{
+    " Iterate over all prefix-matched keys
+    for l:key in s:GetAllKeysInTableWithPrefix(a:probe, a:code)
+        if type(a:probe[(l:key)]) == type({})
+            " Found a subtree
+            if l:key == a:code
+                let l:slot = a:m_probes
+            else
+                let l:slot = a:f_probes
+            endif
+        else
+            " Found a subtree that has no subtree
+            if l:key == a:code
+                let l:slot = a:m_leaves
+            else
+                let l:slot = a:f_leaves
+            endif
+        endif
+        call add(l:slot, a:probe[(l:key)])
+    endfor
+endfunction " }}}
+
+
+function! s:CollectResults (m_probes, f_probes, m_leaves, f_leaves) " {{{
+    let l:result = []
+    for l:tmp in map(a:m_probes, 'get(v:val, ''_'', [])')
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in a:m_leaves
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in map(a:f_probes, 'get(v:val, ''_'', [])')
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in a:f_leaves
+        call extend(l:result, l:tmp)
+    endfor
+    return l:result
+endfunction " }}}
+
+
+function! s:BuildResult (symbol_str, m_probes, f_probes, m_leaves, f_leaves, postfix) " {{{
+    let l:result = s:CollectResults(a:m_probes, a:f_probes, a:m_leaves, a:f_leaves)
+    let l:result = map(l:result, 'v:val . a:postfix')
+
+    if len(l:result) == 1 && len(a:m_leaves) == 1
+        " Only one possibility, put it first
+        return l:result + [(a:symbol_str)]
+    else
+        return [(a:symbol_str)] + l:result
+    endif
 endfunction " }}}
 
 
@@ -113,32 +186,81 @@ function! ime_phonetic#handler (matchobj, trigger)
         let s:table = phonetic_table#table()
     endif
 
-    let l:symbol_str = a:matchobj[0] . s:symbol_code_map[a:trigger]
-    if l:symbol_str == ' '
+    let l:symbol_str = a:matchobj[0]
+
+    " The single quote key only triggers the handler,
+    " not insert any chars
+    if a:trigger != ''''
+        let l:symbol_str .= s:symbol_code_map[a:trigger]
+    endif
+
+    " No phonetic symbol given, return []
+    if l:symbol_str == ' ' || l:symbol_str == ''
         return []
     endif
 
     let l:code_list = s:SymbolStr2Code(l:symbol_str)
-    let l:probe = s:table
-    while l:code_list != []
-        let l:code = l:code_list[0]
-        call remove(l:code_list, 0)
 
-        if !has_key(l:probe, l:code)
-            return [(l:symbol_str)]
-        endif
-
-        if type(l:probe[l:code]) == type({})
-            let l:probe = l:probe[l:code]
+    " Special case for single character: no speed input
+    if len(l:code_list) == 1
+        let l:result = s:QuerySingleChar(l:code_list[0])
+        if len(l:result) == 1
+            " Only one possibility, put it first
+            return l:result + [(l:symbol_str)]
         else
-            return [(l:symbol_str)] + map(copy(l:probe[l:code]), 'v:val . s:CodeList2SymbolStr(l:code_list)')
+            return [(l:symbol_str)] + l:result
         endif
-    endwhile
-
-    if has_key(l:probe, '_')
-        return [(l:symbol_str)] + l:probe['_']
     endif
-    return [(l:symbol_str)]
+
+    let l:m_probes = [s:table]  " match BFS search range
+    let l:f_probes = []         " fuzzy BFS search range
+    let l:m_leaves = []         " match results
+    let l:f_leaves = []         " fuzzy results
+
+    let l:lm_probes = []    " fallback match BFS search range
+    let l:lf_probes = []    " fallback fuzzy BFS search range
+    let l:lm_leaves = []    " fallback match results
+    let l:lf_leaves = []    " fallback fuzzy results
+
+    for l:idx in range(len(l:code_list))
+        let l:code = l:code_list[(l:idx)]
+        let l:lm_probes = l:m_probes
+        let l:lf_probes = l:f_probes
+        let l:tmp_m_probes = []
+        let l:tmp_f_probes = []
+
+        " Keep last results for fallback match
+        let l:lm_leaves = l:m_leaves
+        let l:lf_leaves = l:f_leaves
+
+        let l:f_leaves = []
+        let l:m_leaves = []
+
+        " Do BFS
+        for l:probe in l:m_probes
+            call s:BFS_WithCode(l:code, l:probe,
+                        \ l:tmp_m_probes, l:tmp_f_probes,
+                        \ l:m_leaves, l:f_leaves)
+        endfor
+
+        for l:probe in l:f_probes
+            call s:BFS_WithCode(l:code, l:probe,
+                        \ l:tmp_f_probes, l:tmp_f_probes,
+                        \ l:f_leaves, l:f_leaves)
+        endfor
+
+        " Suddenly no result, use fallback result
+        if len(l:tmp_m_probes) + len(l:tmp_f_probes) + len(l:m_leaves) + len(l:f_leaves) == 0
+            return s:BuildResult(l:symbol_str,
+                        \ l:lm_probes, l:lf_probes, l:lm_leaves, l:lf_leaves,
+                        \ s:CodeList2SymbolStr(l:code_list[(l:idx):]))
+        endif
+
+        let l:m_probes = l:tmp_m_probes
+        let l:f_probes = l:tmp_f_probes
+    endfor
+
+    return s:BuildResult(l:symbol_str, l:m_probes, l:f_probes, l:m_leaves, l:f_leaves, '')
 endfunction
 
 
@@ -150,6 +272,6 @@ function! ime_phonetic#info ()
     \ 'description': 'Phonetic input mode',
     \ 'pattern':  '\v%(|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
-    \ 'trigger': split(s:codes, '\zs') + ['<space>'],
+    \ 'trigger': split(s:codes, '\zs') + ['<space>', ''''],
     \ }
 endfunction
