@@ -127,20 +127,57 @@ function! s:GetAllKeysInTableWithPrefix (tb, prefix)
 endfunction
 
 
-function! s:CollectResults (match_leaves, fuzzy_leaves, probes) " {{{
-    let l:result = []
-    for l:leaf in a:match_leaves
-        let l:result += l:leaf
-    endfor
-    for l:leaf in a:fuzzy_leaves
-        let l:result += l:leaf
-    endfor
-    for l:probe in a:probes
-        if has_key(l:probe, '_')
-            let l:result += l:probe['_']
+function! s:BFS_WithCode(code, probe, m_probes, f_probes, m_leaves, f_leaves) " {{{
+    " Iterate over all prefix-matched keys
+    for l:key in s:GetAllKeysInTableWithPrefix(a:probe, a:code)
+        if type(a:probe[(l:key)]) == type({})
+            " Found a subtree
+            if l:key == a:code
+                let l:slot = a:m_probes
+            else
+                let l:slot = a:f_probes
+            endif
+        else
+            " Found a subtree that has no subtree
+            if l:key == a:code
+                let l:slot = a:m_leaves
+            else
+                let l:slot = a:f_leaves
+            endif
         endif
+        call add(l:slot, a:probe[(l:key)])
+    endfor
+endfunction " }}}
+
+
+function! s:CollectResults (m_probes, f_probes, m_leaves, f_leaves) " {{{
+    let l:result = []
+    for l:tmp in map(a:m_probes, 'get(v:val, ''_'', [])')
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in a:m_leaves
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in map(a:f_probes, 'get(v:val, ''_'', [])')
+        call extend(l:result, l:tmp)
+    endfor
+    for l:tmp in a:f_leaves
+        call extend(l:result, l:tmp)
     endfor
     return l:result
+endfunction " }}}
+
+
+function! s:BuildResult (symbol_str, m_probes, f_probes, m_leaves, f_leaves, postfix) " {{{
+    let l:result = s:CollectResults(a:m_probes, a:f_probes, a:m_leaves, a:f_leaves)
+    let l:result = map(l:result, 'v:val . a:postfix')
+
+    if len(l:result) == 1 && len(a:m_leaves) == 1
+        " Only one possibility, put it first
+        return l:result + [(a:symbol_str)]
+    else
+        return [(a:symbol_str)] + l:result
+    endif
 endfunction " }}}
 
 
@@ -166,58 +203,64 @@ function! ime_phonetic#handler (matchobj, trigger)
 
     " Special case for single character: no speed input
     if len(l:code_list) == 1
-        return [(l:symbol_str)] + s:QuerySingleChar(l:code_list[0])
+        let l:result = s:QuerySingleChar(l:code_list[0])
+        if len(l:result) == 1
+            " Only one possibility, put it first
+            return l:result + [(l:symbol_str)]
+        else
+            return [(l:symbol_str)] + l:result
+        endif
     endif
 
-    let l:probes = [s:table]    " fuzzy BFS search range
-    let l:last_leaves = []      " fallback results
-    let l:fuzzy_leaves = []     " results that matches prefix
-    let l:match_leaves = []     " results that prefectly match
+    let l:m_probes = [s:table]  " match BFS search range
+    let l:f_probes = []         " fuzzy BFS search range
+    let l:m_leaves = []         " match results
+    let l:f_leaves = []         " fuzzy results
+
+    let l:lm_probes = []    " fallback match BFS search range
+    let l:lf_probes = []    " fallback fuzzy BFS search range
+    let l:lm_leaves = []    " fallback match results
+    let l:lf_leaves = []    " fallback fuzzy results
+
     for l:idx in range(len(l:code_list))
         let l:code = l:code_list[(l:idx)]
-        let l:tmp_probes = []
+        let l:lm_probes = l:m_probes
+        let l:lf_probes = l:f_probes
+        let l:tmp_m_probes = []
+        let l:tmp_f_probes = []
 
         " Keep last results for fallback match
-        let l:last_leaves = l:match_leaves + l:fuzzy_leaves
+        let l:lm_leaves = l:m_leaves
+        let l:lf_leaves = l:f_leaves
 
-        let l:fuzzy_leaves = []
-        let l:match_leaves = []
+        let l:f_leaves = []
+        let l:m_leaves = []
 
         " Do BFS
-        for l:probe in l:probes
-            " Iterate over all prefix-matched keys
-            for l:key in s:GetAllKeysInTableWithPrefix(l:probe, l:code)
-                if type(l:probe[(l:key)]) == type([])
-                    " Found a subtree that has no subtree
-                    if l:key == l:code
-                        let l:slot = l:match_leaves
-                    else
-                        let l:slot = l:fuzzy_leaves
-                    endif
-                else
-                    " Found a subtree
-                    let l:slot = l:tmp_probes
-                endif
-                call add(l:slot, l:probe[(l:key)])
-            endfor
+        for l:probe in l:m_probes
+            call s:BFS_WithCode(l:code, l:probe,
+                        \ l:tmp_m_probes, l:tmp_f_probes,
+                        \ l:m_leaves, l:f_leaves)
+        endfor
+
+        for l:probe in l:f_probes
+            call s:BFS_WithCode(l:code, l:probe,
+                        \ l:tmp_f_probes, l:tmp_f_probes,
+                        \ l:f_leaves, l:f_leaves)
         endfor
 
         " Suddenly no result, use fallback result
-        if len(l:tmp_probes) + len(l:match_leaves) + len(l:fuzzy_leaves) == 0
-            let l:result = s:CollectResults(l:last_leaves, [], l:probes)
-            let l:remain_code_str = s:CodeList2SymbolStr(l:code_list[(l:idx):])
-            return [(l:symbol_str)] + map(l:result, 'v:val . l:remain_code_str')
+        if len(l:tmp_m_probes) + len(l:tmp_f_probes) + len(l:m_leaves) + len(l:f_leaves) == 0
+            return s:BuildResult(l:symbol_str,
+                        \ l:lm_probes, l:lf_probes, l:lm_leaves, l:lf_leaves,
+                        \ s:CodeList2SymbolStr(l:code_list[(l:idx):]))
         endif
-        let l:probes = l:tmp_probes
+
+        let l:m_probes = l:tmp_m_probes
+        let l:f_probes = l:tmp_f_probes
     endfor
 
-    let l:result = s:CollectResults(l:match_leaves, l:fuzzy_leaves, l:probes)
-    if len(l:result) == 1 && len(l:match_leaves) == 1
-        " Only one possibility, put it first
-        return l:result + [(l:symbol_str)]
-    else
-        return [(l:symbol_str)] + l:result
-    endif
+    return s:BuildResult(l:symbol_str, l:m_probes, l:f_probes, l:m_leaves, l:f_leaves, '')
 endfunction
 
 
