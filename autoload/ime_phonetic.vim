@@ -61,7 +61,6 @@ function! s:Init ()
         let s:symbol_code_map[s:symbol_set[l:idx]] = s:code_set[l:idx]
         let s:symbol_code_map[s:code_set[l:idx]] = s:symbol_set[l:idx]
     endfor
-    let s:symbol_code_map['<space>'] = ' '
     let s:symbol_code_map[' '] = ' '
 endfunction
 
@@ -272,6 +271,6 @@ function! ime_phonetic#info ()
     \ 'description': 'Phonetic input mode',
     \ 'pattern':  '\v%(|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
-    \ 'trigger': split(s:codes, '\zs') + ['<space>', ''''],
+    \ 'trigger': split(s:codes, '\zs') + [' ', ''''],
     \ }
 endfunction
