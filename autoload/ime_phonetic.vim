@@ -181,6 +181,10 @@ endfunction " }}}
 
 
 function! ime_phonetic#handler (matchobj, trigger)
+    if a:trigger == ':'
+        return ['：']
+    endif
+
     if s:table == {}
         let s:table = phonetic_table#table()
     endif
@@ -269,8 +273,8 @@ function! ime_phonetic#info ()
     \ 'type': 'standalone',
     \ 'icon': '[注]',
     \ 'description': 'Phonetic input mode',
-    \ 'pattern':  '\v%(|['. s:symbols .']['. s:symbols .' ]*)$',
+    \ 'pattern':  '\v%(|:|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
-    \ 'trigger': split(s:codes, '\zs') + [' ', ''''],
+    \ 'trigger': split(s:codes, '\zs') + [' ', '''', ':'],
     \ }
 endfunction
