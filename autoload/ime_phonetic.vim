@@ -151,13 +151,13 @@ endfunction " }}}
 
 function! s:CollectResults (m_probes, f_probes, m_leaves, f_leaves) " {{{
     let l:result = []
-    for l:tmp in map(a:m_probes, 'get(v:val, ''_'', [])')
+    for l:tmp in map(copy(a:m_probes), 'get(v:val, ''_'', [])')
         call extend(l:result, l:tmp)
     endfor
     for l:tmp in a:m_leaves
         call extend(l:result, l:tmp)
     endfor
-    for l:tmp in map(a:f_probes, 'get(v:val, ''_'', [])')
+    for l:tmp in map(copy(a:f_probes), 'get(v:val, ''_'', [])')
         call extend(l:result, l:tmp)
     endfor
     for l:tmp in a:f_leaves
@@ -249,7 +249,7 @@ function! ime_phonetic#handler (matchobj, trigger)
         endfor
 
         " Suddenly no result, use fallback result
-        if len(l:tmp_m_probes) + len(l:tmp_f_probes) + len(l:m_leaves) + len(l:f_leaves) == 0
+        if len(s:CollectResults(l:tmp_m_probes, l:tmp_f_probes, l:m_leaves, l:f_leaves)) == 0
             return s:BuildResult(l:symbol_str,
                         \ l:lm_probes, l:lf_probes, l:lm_leaves, l:lf_leaves,
                         \ s:CodeList2SymbolStr(l:code_list[(l:idx):]))
