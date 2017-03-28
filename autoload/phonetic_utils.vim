@@ -66,22 +66,32 @@ endfunction
 
 
 function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
-    let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
-    let l:rtrn = []
-    let l:acc = ['', '', '', '']
-    let l:water_level = -1
-    for l:code in l:code_list
-        let l:pos = s:code_pos[l:code]
-        if l:pos <= l:water_level
-            call add(l:rtrn, join(l:acc, ''))
-            let l:acc = ['', '', '', '']
-            let l:water_level = -1
+    try
+        let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
+        if len(filter(copy(l:code_list), 'has_key(s:code_pos, v:val)')) != len(l:code_list)
+            call s:log('Parse symbol str failed, try code str: "'. a:symbol_str .'"')
+            let l:code_list = split(a:symbol_str, '\zs')
         endif
-        let l:acc[l:pos] = l:code
-        let l:water_level = l:pos
-    endfor
-    call add(l:rtrn, join(l:acc, ''))
-    return l:rtrn
+
+        let l:rtrn = []
+        let l:acc = ['', '', '', '']
+        let l:water_level = -1
+        for l:code in l:code_list
+            let l:pos = s:code_pos[l:code]
+            if l:pos <= l:water_level
+                call add(l:rtrn, join(l:acc, ''))
+                let l:acc = ['', '', '', '']
+                let l:water_level = -1
+            endif
+            let l:acc[l:pos] = l:code
+            let l:water_level = l:pos
+        endfor
+        call add(l:rtrn, join(l:acc, ''))
+        return l:rtrn
+    catch
+        call s:log('Cannot parse symbol str: "'. a:symbol_str .'"')
+        return []
+    endtry
 endfunction " }}}
 function! Test_Symbol2Code () " {{{
     call s:log('[Test] phonetic_utils#SymbolStr2CodeList()')

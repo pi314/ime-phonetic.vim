@@ -148,6 +148,9 @@ function! ime_phonetic#handler (matchobj, trigger)
         " Suddenly no result, use fallback result
         if len(s:CollectResults(l:tmp_m_probes, l:tmp_f_probes, l:m_leaves, l:f_leaves)) == 0 &&
                     \ (len(l:tmp_f_probes) + len(l:tmp_m_probes)) == 0
+            " the length checking is for situation:
+            " s:table[a][b] has no leaf (and '_'),
+            " but s:table[a][b][c] is a leaf or has '_'
             return s:BuildResult(l:symbol_str,
                         \ l:lm_probes, l:lf_probes, l:lm_leaves, l:lf_leaves,
                         \ phonetic_utils#CodeList2SymbolStr(l:code_list[(l:idx):]))
