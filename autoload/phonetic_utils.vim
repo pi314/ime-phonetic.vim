@@ -498,7 +498,6 @@ endfunction
 function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
     try
         let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
-        call s:log(l:code_list)
         if len(filter(copy(l:code_list), 'has_key(s:code_comb, v:val) || v:val =~ ''\v[3467 ]''')) != len(l:code_list)
             call s:log('Parse symbol str failed: "'. a:symbol_str .'", try code str')
             let l:code_list = split(a:symbol_str, '\zs')
