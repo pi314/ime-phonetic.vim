@@ -22,7 +22,7 @@ ime-phonetic.vim 是 `ime.vim <https://github.com/pi314/ime.vim>`_ 的 standalon
     不要 1j6ul4
     哇呼 j84cj
 
-本套件仍然在開發中，有一些已知的問題。
+本套件仍然在開發中，有一些已知的問題，若發現問題或是有開發想法，歡迎開 issue。
 
 
 授權
