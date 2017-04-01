@@ -1,5 +1,5 @@
 function! s:log (...)
-    call call(function('ime#log'), ['phonetic-test'] + a:000)
+    call call(function('ime#log'), ['phonetic'] + a:000)
 endfunction
 
 

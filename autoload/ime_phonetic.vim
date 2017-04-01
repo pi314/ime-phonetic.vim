@@ -1,7 +1,7 @@
 let s:table = {}
 
-function! s:log(msg)
-    call ime#log('phonetic', a:msg)
+function! s:log (...)
+    call call(function('ime#log'), ['phonetic'] + a:000)
 endfunction
 
 
@@ -92,20 +92,24 @@ function! ime_phonetic#handler (matchobj, trigger)
 
     " No phonetic symbol given, return []
     if l:symbol_str == ' ' || l:symbol_str == ''
-        return []
+        return ['']
     endif
 
     let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
 
-    " Special case for single character: no speed input
-    if len(l:code_list) == 1
-        let l:result = s:QuerySingleChar(l:code_list[0])
-        if len(l:result) == 1
-            " Only one possibility, put it first
-            return l:result + [(l:symbol_str)]
-        else
-            return [(l:symbol_str)] + l:result
-        endif
+    " Special case for single character
+    if a:trigger == ''''
+        let l:code = l:code_list[0]
+        let l:m_probes = []  " match BFS search range
+        let l:f_probes = []         " fuzzy BFS search range
+        let l:m_leaves = []         " match results
+        let l:f_leaves = []         " fuzzy results
+        call s:BFS_WithCode(l:code, s:table,
+                    \ l:m_probes, l:f_probes,
+                    \ l:m_leaves, l:f_leaves)
+        return s:BuildResult(l:symbol_str,
+                    \ l:m_probes, l:f_probes, l:m_leaves, l:f_leaves,
+                    \ phonetic_utils#CodeList2SymbolStr(l:code_list[1:]))
     endif
 
     let l:m_probes = [s:table]  " match BFS search range
@@ -146,8 +150,8 @@ function! ime_phonetic#handler (matchobj, trigger)
         endfor
 
         " Suddenly no result, use fallback result
-        if len(s:CollectResults(l:tmp_m_probes, l:tmp_f_probes, l:m_leaves, l:f_leaves)) == 0 &&
-                    \ (len(l:tmp_f_probes) + len(l:tmp_m_probes)) == 0
+        if (len(s:CollectResults(l:tmp_m_probes, l:tmp_f_probes, l:m_leaves, l:f_leaves)) == 0 &&
+                    \ (len(l:tmp_f_probes) + len(l:tmp_m_probes)) == 0)
             " the length checking is for situation:
             " s:table[a][b] has no leaf (and '_'),
             " but s:table[a][b][c] is a leaf or has '_'
@@ -158,6 +162,10 @@ function! ime_phonetic#handler (matchobj, trigger)
 
         let l:m_probes = l:tmp_m_probes
         let l:f_probes = l:tmp_f_probes
+
+        if a:trigger == ''''
+            break
+        endif
     endfor
 
     return s:BuildResult(l:symbol_str, l:m_probes, l:f_probes, l:m_leaves, l:f_leaves, '')
