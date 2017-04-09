@@ -1,0 +1,18 @@
+Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
+  let Testee = function('phonetic_utils#SymbolStr2CodeList')
+  AssertEqual Testee('ㄘㄜˋ'),                    ['hk4']
+  AssertEqual Testee('ㄘㄜˋㄕˋ'),                 ['hk4', 'g4']
+  AssertEqual Testee('ㄕㄘㄜˋ'),                  ['g', 'hk4']
+  AssertEqual Testee('ㄕㄘˋㄜ'),                  ['g', 'h4', 'k']
+  AssertEqual Testee('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'),     ['hk4', 'g4', '5j/ ', 'jp6']
+  AssertEqual Testee('ㄉㄨ'),                     ['2j']
+  AssertEqual Testee('ㄨㄉ'),                     ['j', '2']
+  AssertEqual Testee('ㄓㄧ'),                     ['5', 'u']
+
+Execute ([UT] phonetic_utils#CodeList2SymbolStr()):
+  let Testee = function('phonetic_utils#CodeList2SymbolStr')
+  AssertEqual Testee([]),                              ''
+  AssertEqual Testee(['hk4']),                         'ㄘㄜˋ'
+  AssertEqual Testee(['hk4', 'g4']),                   'ㄘㄜˋㄕˋ'
+  AssertEqual Testee(['g ', 'hk4']),                   'ㄕ ㄘㄜˋ'
+  AssertEqual Testee(['hk4', 'g4', '5j/ ', 'jp6']),    'ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'
