@@ -1,5 +1,6 @@
 Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
   let Testee = function('phonetic_utils#SymbolStr2CodeList')
+  AssertEqual Testee(''),                         []
   AssertEqual Testee('ㄘㄜˋ'),                    ['hk4']
   AssertEqual Testee('ㄘㄜˋㄕˋ'),                 ['hk4', 'g4']
   AssertEqual Testee('ㄕㄘㄜˋ'),                  ['g', 'hk4']
@@ -12,6 +13,7 @@ Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
 Execute ([UT] phonetic_utils#CodeList2SymbolStr()):
   let Testee = function('phonetic_utils#CodeList2SymbolStr')
   AssertEqual Testee([]),                              ''
+  AssertEqual Testee(['']),                            ''
   AssertEqual Testee(['hk4']),                         'ㄘㄜˋ'
   AssertEqual Testee(['hk4', 'g4']),                   'ㄘㄜˋㄕˋ'
   AssertEqual Testee(['g ', 'hk4']),                   'ㄕ ㄘㄜˋ'

@@ -496,6 +496,10 @@ endfunction
 
 
 function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
+    if a:symbol_str == ''
+        return []
+    endif
+
     try
         let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
         if len(filter(copy(l:code_list), 'has_key(s:code_comb, v:val) || v:val =~ ''\v[3467 ]''')) != len(l:code_list)
