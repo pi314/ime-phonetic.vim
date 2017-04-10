@@ -9,6 +9,10 @@ Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
   AssertEqual Testee('ㄉㄨ'),                     ['2j']
   AssertEqual Testee('ㄨㄉ'),                     ['j', '2']
   AssertEqual Testee('ㄓㄧ'),                     ['5', 'u']
+  AssertEqual Testee('ㄦㄦㄦ'),                   ['-', '-', '-']
+  AssertEqual Testee('ㄧㄉㄧㄥㄉㄧㄢˇㄦˊ'),       ['u', '2u/', '2u03', '-6']
+  AssertEqual Testee('ㄧㄒㄧㄝ'),                 ['u', 'vu,']
+
 
 Execute ([UT] phonetic_utils#CodeList2SymbolStr()):
   let Testee = function('phonetic_utils#CodeList2SymbolStr')
