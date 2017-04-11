@@ -6,18 +6,37 @@ Before ([UT] setup):
   let Table['hl3'] = {}
   let Table['g4'] = {}
   let Table['g4']['_'] = [{'w': '是', 'f': 232646}, {'w': '試', 'f': 7126}]
-  let Table['g4']['2u03'] = [{'w': '試點', 'f': 4}]
+  let Table['g4']['2u03'] = [{'w': '釋典', 'f': 0}]
+  let Table['2u03'] = [{'w': '點', 'f': 25637}]
+
 
 Execute ([UT] Utility: ime_phonetic#_GetAllKeyStartsWith):
   let Testee = function('ime_phonetic#_GetAllKeyStartsWith')
   AssertEqual Testee(Table, 'h'),                       ['hk4', 'hl3']
   AssertEqual Testee(Table, 'g4'),                      ['g4']
 
+
 Execute ([UT] Utility: ime_phonetic#_GetBestWord):
   let Testee = function('ime_phonetic#_GetBestWord')
-  AssertEqual Testee(Table, ['hk4']),                   {'w': '策', 'f': 6428}
-  AssertEqual Testee(Table, ['hk4', 'g4']),             {'w': '測試', 'f': 837}
-  AssertEqual Testee(Table, ['hk4', 'nji3']),           {'w': '', 'f': -1}
+  AssertEqual Testee(Table, ['hk4'], 0),                {'w': '策', 'f': 6428}
+  AssertEqual Testee(Table, ['hk4', 'g4'], 0),          {'w': '測試', 'f': 837}
+  AssertEqual Testee(Table, ['hk4', 'nji3'], 0),        {'w': '', 'f': -1}
+
+  AssertEqual Testee(Table, ['hk4', 'nji3'], 1),        {'word': '策', 'remain': ['nji3']}
+
 
 Execute ([UT] Utility: ime_phonetic#_FindBestSentence):
   let Testee = function('ime_phonetic#_FindBestSentence')
+  AssertEqual Testee(Table, ['hk4', 'g4', '2u03']),           '測試點'
+
+  let Table['g4']['2u03'] = [{'w': '釋典', 'f': 50000}]
+  AssertEqual Testee(Table, ['hk4', 'g4', '2u03']),           '策釋典'
+
+
+Execute ([UT] FIXME: use real database to test, may fail):
+  let Testee = function('ime_phonetic#_GetBestWord')
+  AssertEqual Testee(phonetic_table#table(), ['hk4', 'g4', 'vu;', 'rul'], 1),  {'word': '測試', 'remain':['vu;', 'rul']}
+
+  let Testee = function('ime_phonetic#_FindBestSentence')
+  AssertEqual Testee(phonetic_table#table(), ['ji3', 'g4', 'su3', '184', 'fm4', 'a94', 'cji3', 't96']),  '我是你爸去賣火柴'
+  AssertEqual Testee(phonetic_table#table(), ['hk4', 'g', '5j/', 'jp', 'gj', 'bj4', 'z83']),  '測試中文輸入法'
