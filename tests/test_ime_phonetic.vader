@@ -1,0 +1,23 @@
+Before ([UT] setup):
+  let Table = {}
+  let Table['hk4'] = {}
+  let Table['hk4']['_'] = [{'w': '策', 'f': 6428}, {'w': '測', 'f': 4296}]
+  let Table['hk4']['g4'] = [{'w': '測試', 'f': 837}]
+  let Table['hl3'] = {}
+  let Table['g4'] = {}
+  let Table['g4']['_'] = [{'w': '是', 'f': 232646}, {'w': '試', 'f': 7126}]
+  let Table['g4']['2u03'] = [{'w': '試點', 'f': 4}]
+
+Execute ([UT] Utility: ime_phonetic#_GetAllKeyStartsWith):
+  let Testee = function('ime_phonetic#_GetAllKeyStartsWith')
+  AssertEqual Testee(Table, 'h'),                       ['hk4', 'hl3']
+  AssertEqual Testee(Table, 'g4'),                      ['g4']
+
+Execute ([UT] Utility: ime_phonetic#_GetBestWord):
+  let Testee = function('ime_phonetic#_GetBestWord')
+  AssertEqual Testee(Table, ['hk4']),                   {'w': '策', 'f': 6428}
+  AssertEqual Testee(Table, ['hk4', 'g4']),             {'w': '測試', 'f': 837}
+  AssertEqual Testee(Table, ['hk4', 'nji3']),           {'w': '', 'f': -1}
+
+Execute ([UT] Utility: ime_phonetic#_FindBestSentence):
+  let Testee = function('ime_phonetic#_FindBestSentence')
