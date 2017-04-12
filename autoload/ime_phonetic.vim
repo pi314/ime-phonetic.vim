@@ -79,20 +79,29 @@ function! ime_phonetic#_FindBestSentence (table, code_list) " {{{
     " l:dp_val[a][b] stores the best solution of code_list[a:b]
     let l:dp_val = map(
                 \ range(l:len),
-                \ 'map(range(l:len), ''{"v": -1, "w": ""}'')')
+                \ 'map(range(l:len), ''{"v": -1, "w": "", "p": 0}'')')
     for l:i in range(l:len - 1, 0, -1)
         for l:j in range(l:i, l:len - 1)
             let l:local_best = ime_phonetic#_GetBestWord(a:table, a:code_list[(l:i):(l:j)], 0)
-            if l:local_best['f'] == -1
-                for l:middle in range(l:i, l:j - 1)
-                    let l:left = l:dp_val[(l:i)][(l:middle)]
-                    let l:right = l:dp_val[(l:middle + 1)][(l:j)]
+            if l:local_best['f'] > 0
+                let l:local_best['p'] = (l:j - l:i + 1) * (l:j - l:i + 1)
+            else
+                let l:local_best['p'] = 0
+            endif
+            for l:middle in range(l:i, l:j - 1)
+                let l:left = l:dp_val[(l:i)][(l:middle)]
+                let l:right = l:dp_val[(l:middle + 1)][(l:j)]
+                if l:left['p'] + l:right['p'] > l:local_best['p']
+                    let l:local_best['f'] = l:left['f'] + l:right['f']
+                    let l:local_best['w'] = l:left['w'] . l:right['w']
+                    let l:local_best['p'] = l:left['p'] + l:right['p']
+                elseif l:left['p'] + l:right['p'] == l:local_best['p']
                     if l:left['f'] + l:right['f']  > l:local_best['f']
                         let l:local_best['f'] = l:left['f'] + l:right['f']
                         let l:local_best['w'] = l:left['w'] . l:right['w']
                     endif
-                endfor
-            endif
+                endif
+            endfor
             let l:dp_val[(l:i)][(l:j)] = l:local_best
         endfor
     endfor

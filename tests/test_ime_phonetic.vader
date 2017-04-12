@@ -40,3 +40,4 @@ Execute ([UT] FIXME: use real database to test, may fail):
   let Testee = function('ime_phonetic#_FindBestSentence')
   AssertEqual Testee(phonetic_table#table(), ['ji3', 'g4', 'su3', '184', 'fm4', 'a94', 'cji3', 't96']),  '我是你爸去賣火柴'
   AssertEqual Testee(phonetic_table#table(), ['hk4', 'g', '5j/', 'jp', 'gj', 'bj4', 'z83']),  '測試中文輸入法'
+  AssertEqual Testee(phonetic_table#table(), ['rup', 'wu0', 'wu0', 'fu4', '5p ', '5/4', 'cl3']),  '今天天氣真正好'
