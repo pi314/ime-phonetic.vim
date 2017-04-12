@@ -872,7 +872,6 @@ function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
 
     try
         if a:symbol_str !~ '^\v[0-9a-z,./;-]$'
-            call s:log('Code string not detected, assume symbol string')
             let l:code_list = map(split(a:symbol_str, '\zs'), 's:symbol_code_map[v:val]')
         else
             call s:log('Code string detected')

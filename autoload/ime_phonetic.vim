@@ -5,71 +5,115 @@ function! s:log (...)
 endfunction
 
 
-function! s:QuerySingleChar (code) " {{{
-    if has_key(s:table, a:code)
-        let l:tb = s:table[(a:code)]
-        return (type(l:tb) == type([])) ? (l:tb) : (l:tb['_'])
-    endif
-    return []
+function! ime_phonetic#_GetAllKeyStartsWith (table, key) " {{{
+    " Return all keys in a:table that starts with a:key
+    " for fuzzy input
+    return filter(keys(a:table), 'strpart(v:val, 0, strlen(a:key)) == a:key')
 endfunction " }}}
 
 
-function! s:GetAllKeysInTableWithPrefix (tb, prefix)
-    return filter(keys(a:tb), 'strpart(v:val, 0, strlen(a:prefix)) == a:prefix')
-endfunction
+function! ime_phonetic#_GetBestWord (table, code_list, partial_result) " {{{
+    " This function collects all words match a:code_list
+    " and returns the one has maximum frequency
+    "
+    " If partial_result = 0, this function returns empty result when no such
+    " word
+    "
+    " If partial_result = 1, this function returns the longest word it can
+    " find
 
-
-function! s:BFS_WithCode(code, probe, m_probes, f_probes, m_leaves, f_leaves) " {{{
-    " Iterate over all prefix-matched keys
-    for l:key in s:GetAllKeysInTableWithPrefix(a:probe, a:code)
-        if type(a:probe[(l:key)]) == type({})
-            " Found a subtree
-            if l:key == a:code
-                let l:slot = a:m_probes
-            else
-                let l:slot = a:f_probes
-            endif
-        else
-            " Found a subtree that has no subtree
-            if l:key == a:code
-                let l:slot = a:m_leaves
-            else
-                let l:slot = a:f_leaves
-            endif
+    let l:probes = [a:table]
+    let l:leaves = []
+    let l:code_list = copy(a:code_list)
+    while len(l:code_list) > 0
+        let l:code = l:code_list[0]
+        let l:next_probe = []
+        let l:leaves = []
+        for l:probe in l:probes
+            for l:key in ime_phonetic#_GetAllKeyStartsWith(l:probe, l:code)
+                " The table is sqeezed, so the leaves have to be stored
+                " separately
+                if type(l:probe[(l:key)]) == type({})
+                    call add(l:next_probe, l:probe[(l:key)])
+                else
+                    call add(l:leaves, l:probe[(l:key)])
+                endif
+            endfor
+        endfor
+        if len(l:next_probe) == 0 && a:partial_result == 1
+            break
         endif
-        call add(l:slot, a:probe[(l:key)])
-    endfor
-endfunction " }}}
+        let l:probes = l:next_probe
+        call remove(l:code_list, 0)
+    endwhile
 
 
-function! s:CollectResults (m_probes, f_probes, m_leaves, f_leaves) " {{{
-    let l:result = []
-    for l:tmp in map(copy(a:m_probes), 'get(v:val, ''_'', [])')
-        call extend(l:result, l:tmp)
+    let l:best = {'w': '', 'f': -1}
+    " Find the word that has maximum frequency
+    for l:leaf in l:leaves + map(l:probes, 'get(v:val, ''_'', [])')
+        for l:record in l:leaf
+            if l:record['f'] > l:best['f']
+                let l:best = l:record
+            endif
+        endfor
     endfor
-    for l:tmp in a:m_leaves
-        call extend(l:result, l:tmp)
-    endfor
-    for l:tmp in map(copy(a:f_probes), 'get(v:val, ''_'', [])')
-        call extend(l:result, l:tmp)
-    endfor
-    for l:tmp in a:f_leaves
-        call extend(l:result, l:tmp)
-    endfor
-    return l:result
-endfunction " }}}
 
-
-function! s:BuildResult (symbol_str, m_probes, f_probes, m_leaves, f_leaves, postfix) " {{{
-    let l:result = s:CollectResults(a:m_probes, a:f_probes, a:m_leaves, a:f_leaves)
-    let l:result = map(l:result, 'v:val . a:postfix')
-
-    if len(l:result) == 1 && len(a:m_leaves) == 1
-        " Only one possibility, put it first
-        return l:result + [(a:symbol_str)]
+    if a:partial_result == 1
+        return {
+            \ 'word': l:best['w'],
+            \ 'remain': l:code_list,
+            \ }
     else
-        return [(a:symbol_str)] + l:result
+        " Prevent further computation polluting the table
+        return copy(l:best)
     endif
+endfunction " }}}
+
+
+function! ime_phonetic#_FindBestSentence (table, code_list) " {{{
+    " This function searches optimal sentences of a:code_list from s:table
+    " with dynamic programming
+
+    let l:len = len(a:code_list)
+
+    " l:dp_val[a][b] stores the best solution of code_list[a:b]
+    let l:dp_val = map(
+                \ range(l:len),
+                \ 'map(range(l:len), ''{"v": -1, "w": ""}'')')
+    for l:i in range(l:len - 1, 0, -1)
+        for l:j in range(l:i, l:len - 1)
+            let l:local_best = ime_phonetic#_GetBestWord(a:table, a:code_list[(l:i):(l:j)], 0)
+            if l:local_best['f'] == -1
+                for l:middle in range(l:i, l:j - 1)
+                    let l:left = l:dp_val[(l:i)][(l:middle)]
+                    let l:right = l:dp_val[(l:middle + 1)][(l:j)]
+                    if l:left['f'] + l:right['f']  > l:local_best['f']
+                        let l:local_best['f'] = l:left['f'] + l:right['f']
+                        let l:local_best['w'] = l:left['w'] . l:right['w']
+                    endif
+                endfor
+            endif
+            let l:dp_val[(l:i)][(l:j)] = l:local_best
+        endfor
+    endfor
+
+    return l:dp_val[0][(l:len - 1)]['w']
+endfunction " }}}
+
+
+function! s:CompFreq (a, b) " {{{
+    return a:a['f'] < a:b['f']
+endfunction " }}}
+function! ime_phonetic#_QueryOneWord (table, code_list) " {{{
+    let l:result = []
+    for l:key in ime_phonetic#_GetAllKeyStartsWith(a:table, a:code_list[0])
+        call extend(l:result,
+                \ type(a:table[(l:key)]) == type({}) ?
+                \ get(a:table[(l:key)], '_', []) :
+                \ a:table[(l:key)]
+                \ )
+    endfor
+    return map(sort(copy(l:result), "<SID>CompFreq"), 'v:val[''w''] . phonetic_utils#CodeList2SymbolStr(a:code_list[1:])')
 endfunction " }}}
 
 
@@ -99,76 +143,18 @@ function! ime_phonetic#handler (matchobj, trigger)
 
     " Special case for single character
     if a:trigger == ''''
-        let l:code = l:code_list[0]
-        let l:m_probes = []  " match BFS search range
-        let l:f_probes = []         " fuzzy BFS search range
-        let l:m_leaves = []         " match results
-        let l:f_leaves = []         " fuzzy results
-        call s:BFS_WithCode(l:code, s:table,
-                    \ l:m_probes, l:f_probes,
-                    \ l:m_leaves, l:f_leaves)
-        return s:BuildResult(l:symbol_str,
-                    \ l:m_probes, l:f_probes, l:m_leaves, l:f_leaves,
-                    \ phonetic_utils#CodeList2SymbolStr(l:code_list[1:]))
+    return [
+        \ l:symbol_str,
+        \ ] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
     endif
 
-    let l:m_probes = [s:table]  " match BFS search range
-    let l:f_probes = []         " fuzzy BFS search range
-    let l:m_leaves = []         " match results
-    let l:f_leaves = []         " fuzzy results
+    let l:partial_result = ime_phonetic#_GetBestWord(s:table, l:code_list, 1)
 
-    let l:lm_probes = []    " fallback match BFS search range
-    let l:lf_probes = []    " fallback fuzzy BFS search range
-    let l:lm_leaves = []    " fallback match results
-    let l:lf_leaves = []    " fallback fuzzy results
-
-    for l:idx in range(len(l:code_list))
-        let l:code = l:code_list[(l:idx)]
-        let l:lm_probes = l:m_probes
-        let l:lf_probes = l:f_probes
-        let l:tmp_m_probes = []
-        let l:tmp_f_probes = []
-
-        " Keep last results for fallback match
-        let l:lm_leaves = l:m_leaves
-        let l:lf_leaves = l:f_leaves
-
-        let l:f_leaves = []
-        let l:m_leaves = []
-
-        " Do BFS
-        for l:probe in l:m_probes
-            call s:BFS_WithCode(l:code, l:probe,
-                        \ l:tmp_m_probes, l:tmp_f_probes,
-                        \ l:m_leaves, l:f_leaves)
-        endfor
-
-        for l:probe in l:f_probes
-            call s:BFS_WithCode(l:code, l:probe,
-                        \ l:tmp_f_probes, l:tmp_f_probes,
-                        \ l:f_leaves, l:f_leaves)
-        endfor
-
-        " Suddenly no result, use fallback result
-        if (len(s:CollectResults(l:tmp_m_probes, l:tmp_f_probes, l:m_leaves, l:f_leaves)) == 0 &&
-                    \ (len(l:tmp_f_probes) + len(l:tmp_m_probes)) == 0)
-            " the length checking is for situation:
-            " s:table[a][b] has no leaf (and '_'),
-            " but s:table[a][b][c] is a leaf or has '_'
-            return s:BuildResult(l:symbol_str,
-                        \ l:lm_probes, l:lf_probes, l:lm_leaves, l:lf_leaves,
-                        \ phonetic_utils#CodeList2SymbolStr(l:code_list[(l:idx):]))
-        endif
-
-        let l:m_probes = l:tmp_m_probes
-        let l:f_probes = l:tmp_f_probes
-
-        if a:trigger == ''''
-            break
-        endif
-    endfor
-
-    return s:BuildResult(l:symbol_str, l:m_probes, l:f_probes, l:m_leaves, l:f_leaves, '')
+    return [
+        \ l:symbol_str,
+        \ ime_phonetic#_FindBestSentence(s:table, l:code_list),
+        \ l:partial_result['word'] . phonetic_utils#CodeList2SymbolStr(l:partial_result['remain']),
+        \ ] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
 endfunction
 
 
