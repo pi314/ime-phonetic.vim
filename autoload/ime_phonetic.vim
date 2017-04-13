@@ -5,6 +5,9 @@ function! s:log (...)
 endfunction
 
 
+let s:abort = 'ime_phonetic_abort'
+
+
 function! ime_phonetic#_GetAllKeyStartsWith (table, key) " {{{
     " Return all keys in a:table that starts with a:key
     " for fuzzy input
@@ -12,14 +15,14 @@ function! ime_phonetic#_GetAllKeyStartsWith (table, key) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic#_GetBestWord (table, code_list, partial_result) " {{{
+function! ime_phonetic#_GetBestWord (table, code_list, first_word) " {{{
     " This function collects all words match a:code_list
     " and returns the one has maximum frequency
     "
-    " If partial_result = 0, this function returns empty result when no such
+    " If first_word = 0, this function returns empty result when no such
     " word
     "
-    " If partial_result = 1, this function returns the longest word it can
+    " If first_word = 1, this function returns the longest word it can
     " find
 
     let l:probes = [a:table]
@@ -31,6 +34,10 @@ function! ime_phonetic#_GetBestWord (table, code_list, partial_result) " {{{
         let l:leaves = []
         for l:probe in l:probes
             for l:key in ime_phonetic#_GetAllKeyStartsWith(l:probe, l:code)
+                if getchar(1)
+                    throw s:abort
+                endif
+
                 " The table is sqeezed, so the leaves have to be stored
                 " separately
                 if type(l:probe[(l:key)]) == type({})
@@ -40,7 +47,7 @@ function! ime_phonetic#_GetBestWord (table, code_list, partial_result) " {{{
                 endif
             endfor
         endfor
-        if len(l:next_probe) == 0 && a:partial_result == 1
+        if len(l:next_probe) == 0 && a:first_word == 1
             break
         endif
         let l:probes = l:next_probe
@@ -52,13 +59,17 @@ function! ime_phonetic#_GetBestWord (table, code_list, partial_result) " {{{
     " Find the word that has maximum frequency
     for l:leaf in l:leaves + map(l:probes, 'get(v:val, ''_'', [])')
         for l:record in l:leaf
+            if getchar(1)
+                throw s:abort
+            endif
+
             if l:record['f'] > l:best['f']
                 let l:best = l:record
             endif
         endfor
     endfor
 
-    if a:partial_result == 1
+    if a:first_word == 1
         return {
             \ 'word': l:best['w'],
             \ 'remain': l:code_list,
@@ -89,6 +100,9 @@ function! ime_phonetic#_FindBestSentence (table, code_list) " {{{
                 let l:local_best['p'] = 0
             endif
             for l:middle in range(l:i, l:j - 1)
+                if getchar(1)
+                    throw s:abort
+                endif
                 let l:left = l:dp_val[(l:i)][(l:middle)]
                 let l:right = l:dp_val[(l:middle + 1)][(l:j)]
                 if l:left['p'] + l:right['p'] > l:local_best['p']
@@ -127,10 +141,6 @@ endfunction " }}}
 
 
 function! ime_phonetic#handler (matchobj, trigger)
-    if a:trigger == ':'
-        return ['：']
-    endif
-
     if s:table == {}
         let s:table = phonetic_table#table()
     endif
@@ -143,27 +153,29 @@ function! ime_phonetic#handler (matchobj, trigger)
         let l:symbol_str .= phonetic_utils#key_to_code(a:trigger)
     endif
 
-    " No phonetic symbol given, return []
-    if l:symbol_str == ' ' || l:symbol_str == ''
-        return ['']
+    " No phonetic symbol given, just return it back
+    if match(l:symbol_str, '\v^ *$') != -1
+        return [l:symbol_str]
     endif
 
-    let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
+    try
+        let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
 
-    " Special case for single character
-    if a:trigger == ''''
-    return [
-        \ l:symbol_str,
-        \ ] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
-    endif
+        " Special case for single character
+        if a:trigger == ''''
+            return [l:symbol_str] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
+        endif
 
-    let l:partial_result = ime_phonetic#_GetBestWord(s:table, l:code_list, 1)
-
-    return [
-        \ l:symbol_str,
-        \ ime_phonetic#_FindBestSentence(s:table, l:code_list),
-        \ l:partial_result['word'] . phonetic_utils#CodeList2SymbolStr(l:partial_result['remain']),
-        \ ] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
+        let l:best_sentence = ime_phonetic#_FindBestSentence(s:table, l:code_list)
+        let l:first_word = ime_phonetic#_GetBestWord(s:table, l:code_list, 1)
+        return [
+            \ l:symbol_str,
+            \ l:best_sentence,
+            \ l:first_word['word'] . phonetic_utils#CodeList2SymbolStr(l:first_word['remain']),
+            \ ] + ime_phonetic#_QueryOneWord(s:table, l:code_list)
+    catch /^ime_phonetic_abort$/
+        return [l:symbol_str]
+    endtry
 endfunction
 
 
