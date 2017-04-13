@@ -15,23 +15,19 @@ function! ime_phonetic#_GetAllKeyStartsWith (table, key) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic#_GetBestWord (table, code_list, first_word) " {{{
-    " This function collects all words match a:code_list
-    " and returns the one has maximum frequency
-    "
-    " If first_word = 0, this function returns empty result when no such
-    " word
-    "
-    " If first_word = 1, this function returns the longest word it can
-    " find
-
-    let l:probes = [a:table]
-    let l:leaves = []
+function! ime_phonetic#_SearchWord (table, code_list) " {{{
+    let l:probes_hist = [[a:table]]         " stack
+    let l:leaves_hist = []                  " stack
     let l:code_list = copy(a:code_list)
     while len(l:code_list) > 0
+        if getchar(1)
+            throw s:abort
+        endif
+
+        let l:next_probes = []
+        let l:next_leaves = []
         let l:code = l:code_list[0]
-        let l:next_probe = []
-        let l:leaves = []
+        let l:probes = l:probes_hist[0]
         for l:probe in l:probes
             for l:key in ime_phonetic#_GetAllKeyStartsWith(l:probe, l:code)
                 if getchar(1)
@@ -41,23 +37,31 @@ function! ime_phonetic#_GetBestWord (table, code_list, first_word) " {{{
                 " The table is sqeezed, so the leaves have to be stored
                 " separately
                 if type(l:probe[(l:key)]) == type({})
-                    call add(l:next_probe, l:probe[(l:key)])
+                    call add(l:next_probes, l:probe[(l:key)])
                 else
-                    call add(l:leaves, l:probe[(l:key)])
+                    call add(l:next_leaves, l:probe[(l:key)])
                 endif
             endfor
         endfor
-        if len(l:next_probe) == 0 && a:first_word == 1
-            break
-        endif
-        let l:probes = l:next_probe
+        call insert(l:probes_hist, l:next_probes, 0)
+        call insert(l:leaves_hist, l:next_leaves, 0)
         call remove(l:code_list, 0)
     endwhile
+    return [l:probes_hist, l:leaves_hist]
+endfunction " }}}
 
 
+function! ime_phonetic#_GetBestWord (table, code_list) " {{{
+    " This function collects all words match a:code_list
+    " and returns the one has maximum frequency
+    "
+    " This function returns an empty result when no such word in database
+
+    let [l:probes_hist, l:leaves_hist] =
+                \ ime_phonetic#_SearchWord(a:table, a:code_list)
     let l:best = {'w': '', 'f': -1}
     " Find the word that has maximum frequency
-    for l:leaf in l:leaves + map(l:probes, 'get(v:val, ''_'', [])')
+    for l:leaf in l:leaves_hist[0] + map(l:probes_hist[0], 'get(v:val, ''_'', [])')
         for l:record in l:leaf
             if getchar(1)
                 throw s:abort
@@ -69,15 +73,48 @@ function! ime_phonetic#_GetBestWord (table, code_list, first_word) " {{{
         endfor
     endfor
 
-    if a:first_word == 1
-        return {
-            \ 'word': l:best['w'],
-            \ 'remain': l:code_list,
-            \ }
-    else
-        " Prevent further computation polluting the table
-        return copy(l:best)
-    endif
+    " Prevent further computation polluting the table
+    return copy(l:best)
+endfunction " }}}
+
+
+function! ime_phonetic#_GetFirstBestWord (table, code_list) " {{{
+    " This function collects all words match a:code_list
+    " and returns the one has maximum frequency
+    "
+    " This function returns the longest result
+
+    let [l:probes_hist, l:leaves_hist] =
+                \ ime_phonetic#_SearchWord(a:table, a:code_list)
+
+    while len(l:probes_hist[0]) == 0 && len(l:leaves_hist[0]) == 0
+        if getchar(1)
+            throw s:abort
+        endif
+
+        call remove(l:probes_hist, 0)
+        call remove(l:leaves_hist, 0)
+    endwhile
+
+    let l:best = {'w': '', 'f': -1}
+    " Find the word that has maximum frequency
+    for l:leaf in l:leaves_hist[0] + map(l:probes_hist[0], 'get(v:val, ''_'', [])')
+        for l:record in l:leaf
+            if getchar(1)
+                throw s:abort
+            endif
+
+            if l:record['f'] > l:best['f']
+                let l:best = l:record
+            endif
+        endfor
+    endfor
+
+    " Prevent further computation polluting the table
+    return {
+        \ 'word': l:best['w'],
+        \ 'remain': a:code_list[(len(l:probes_hist) - 1):],
+        \ }
 endfunction " }}}
 
 
@@ -93,7 +130,7 @@ function! ime_phonetic#_FindBestSentence (table, code_list) " {{{
                 \ 'map(range(l:len), ''{"v": -1, "w": "", "p": 0}'')')
     for l:i in range(l:len - 1, 0, -1)
         for l:j in range(l:i, l:len - 1)
-            let l:local_best = ime_phonetic#_GetBestWord(a:table, a:code_list[(l:i):(l:j)], 0)
+            let l:local_best = ime_phonetic#_GetBestWord(a:table, a:code_list[(l:i):(l:j)])
             if l:local_best['f'] > 0
                 let l:local_best['p'] = (l:j - l:i + 1) * (l:j - l:i + 1)
             else
@@ -167,7 +204,7 @@ function! ime_phonetic#handler (matchobj, trigger)
         endif
 
         let l:best_sentence = ime_phonetic#_FindBestSentence(s:table, l:code_list)
-        let l:first_word = ime_phonetic#_GetBestWord(s:table, l:code_list, 1)
+        let l:first_word = ime_phonetic#_GetFirstBestWord(s:table, l:code_list)
         return [
             \ l:symbol_str,
             \ l:best_sentence,
