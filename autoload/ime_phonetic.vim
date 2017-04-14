@@ -17,7 +17,7 @@ endfunction " }}}
 
 function! ime_phonetic#_SearchWord (table, code_list) " {{{
     let l:probes_hist = [[a:table]]         " stack
-    let l:leaves_hist = []                  " stack
+    let l:leaves_hist = [[]]                " stack
     let l:code_list = copy(a:code_list)
     while len(l:code_list) > 0
         if getchar(1)
@@ -123,6 +123,9 @@ function! ime_phonetic#_FindBestSentence (table, code_list) " {{{
     " with dynamic programming
 
     let l:len = len(a:code_list)
+    if l:len == 0
+        return ''
+    endif
 
     " l:dp_val[a][b] stores the best solution of code_list[a:b]
     let l:dp_val = map(
@@ -165,6 +168,10 @@ function! s:CompFreq (a, b) " {{{
     return a:a['f'] < a:b['f']
 endfunction " }}}
 function! ime_phonetic#_QueryOneWord (table, code_list) " {{{
+    if a:code_list == []
+        return []
+    endif
+
     let l:result = []
     for l:key in ime_phonetic#_GetAllKeyStartsWith(a:table, a:code_list[0])
         call extend(l:result,

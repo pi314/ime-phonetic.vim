@@ -13,6 +13,8 @@ Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
   AssertEqual Testee('ㄧㄉㄧㄥㄉㄧㄢˇㄦˊ'),       ['u', '2u/', '2u03', '-6']
   AssertEqual Testee('ㄧㄒㄧㄝ'),                 ['u', 'vu,']
   AssertEqual Testee('ㄓㄨ'),                     ['5j']
+  AssertEqual Testee('ˊˇˋ'),                      []
+  AssertEqual Testee('ㄓㄨˊˋ'),                   ['5j6']
 
 
 Execute ([UT] phonetic_utils#CodeList2SymbolStr()):

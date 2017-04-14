@@ -24,11 +24,14 @@ Execute ([UT] Utility: ime_phonetic#_GetBestWord):
 
 Execute ([UT] Utility: ime_phonetic#_GetFirstBestWord):
   let Testee = function('ime_phonetic#_GetFirstBestWord')
+  AssertEqual Testee(Table, []),                        {'word': '', 'remain': []}
   AssertEqual Testee(Table, ['hk4', 'nji3']),           {'word': '策', 'remain': ['nji3']}
 
 
 Execute ([UT] Utility: ime_phonetic#_FindBestSentence):
   let Testee = function('ime_phonetic#_FindBestSentence')
+  AssertEqual Testee(Table, []),                              ''
+
   AssertEqual Testee(Table, ['hk4', 'g4', '2u03']),           '測試點'
 
   let Table['g4']['2u03'] = [{'w': '釋典', 'f': 50000}]

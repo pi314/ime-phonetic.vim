@@ -868,6 +868,8 @@ endfunction
 function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
     if a:symbol_str == ''
         return []
+    elseif a:symbol_str =~ '\v^[ ˊˇˋ˙]*$'
+        return []
     endif
 
     try
@@ -884,11 +886,13 @@ function! phonetic_utils#SymbolStr2CodeList (symbol_str) " {{{
         let l:probe = s:code_comb
         for l:code in l:code_list
             if !has_key(l:probe, l:code)
-                if l:code =~ '\v[3467 ]' && l:sound == 0
-                    " here comes a sound code and we don't have one
-                    let l:acc .= l:code
-                    let l:probe = {}    " no more code
-                    let l:sound = 1
+                if l:code =~ '\v[3467 ]'
+                    " absorb all sound codes, only keep first one
+                    if l:sound == 0
+                        let l:acc .= l:code
+                        let l:sound = 1
+                    endif
+                    let l:probe = {}
                 else
                     call add(l:result, l:acc)
                     let l:acc = l:code
