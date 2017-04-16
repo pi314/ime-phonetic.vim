@@ -1,6 +1,10 @@
 let s:table = {}
 let s:max_length = 0
 
+let s:cache_dp_val = []
+let s:cache_code_list = []
+
+
 function! s:log (...)
     call call(function('ime#log'), ['phonetic'] + a:000)
 endfunction
@@ -12,6 +16,10 @@ let s:abort = 'ime_phonetic_abort'
 function! ime_phonetic#_InjectTableForTesting (table, max_length) " {{{
     let s:table = a:table
     let s:max_length = a:max_length
+
+    " invalid cache
+    let s:cache_dp_val = []
+    let s:cache_code_list = []
 endfunction " }}}
 
 
@@ -142,8 +150,24 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
     let l:dp_val = map(
                 \ range(l:len),
                 \ 'map(range(l:len), ''{"v": -1, "w": "", "p": 0}'')')
+
+    " check how much cache is reusable
+    let l:reusable = 0
+    while l:reusable < min([len(s:cache_code_list), len(a:code_list)])
+        if s:cache_code_list[(l:reusable)] != a:code_list[(l:reusable)]
+            break
+        endif
+        let l:reusable += 1
+    endwhile
+    let l:reusable -= 1
+
     for l:i in range(l:len - 1, 0, -1)
         for l:j in range(l:i, l:len - 1)
+            if l:i <= l:reusable && l:j <= l:reusable
+                let l:dp_val[(l:i)][(l:j)] = s:cache_dp_val[(l:i)][(l:j)]
+                continue
+            endif
+
             let l:local_best = ime_phonetic#_GetBestWord(a:code_list[(l:i):(l:j)])
             if l:local_best['f'] > 0
                 let l:local_best['p'] = (l:j - l:i + 1) * (l:j - l:i + 1)
@@ -170,7 +194,8 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
             let l:dp_val[(l:i)][(l:j)] = l:local_best
         endfor
     endfor
-
+    let s:cache_dp_val = l:dp_val
+    let s:cache_code_list = a:code_list
     return l:dp_val[0][(l:len - 1)]['w']
 endfunction " }}}
 

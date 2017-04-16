@@ -36,6 +36,7 @@ Execute ([UT] Utility: ime_phonetic#_FindBestSentence):
   AssertEqual Testee(['hk4', 'g4', '2u03']),           '測試點'
 
   let Table['g4']['2u03'] = [{'w': '釋典', 'f': 50000}]
+  call ime_phonetic#_InjectTableForTesting(Table, 2)
   AssertEqual Testee(['hk4', 'g4', '2u03']),           '策釋典'
 
 
