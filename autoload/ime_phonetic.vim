@@ -1,8 +1,9 @@
 let s:table = {}
 let s:max_length = 0
 
-let s:cache_dp_val = []
-let s:cache_code_list = []
+" s:cache[s] stores the best sentence of string s
+let s:cache = {}
+let s:cache_recent = []
 
 
 function! s:log (...)
@@ -17,9 +18,9 @@ function! ime_phonetic#_InjectTableForTesting (table, max_length) " {{{
     let s:table = a:table
     let s:max_length = a:max_length
 
-    " invalid cache
-    let s:cache_dp_val = []
-    let s:cache_code_list = []
+    " cache invalidation
+    let s:cache = {}
+    let s:cache_recent = []
 endfunction " }}}
 
 
@@ -146,25 +147,13 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
         return ''
     endif
 
-    " l:dp_val[a][b] stores the best solution of code_list[a:b]
-    let l:dp_val = map(
-                \ range(l:len),
-                \ 'map(range(l:len), ''{"v": -1, "w": "", "p": 0}'')')
-
-    " check how much cache is reusable
-    let l:reusable = 0
-    while l:reusable < min([len(s:cache_code_list), len(a:code_list)])
-        if s:cache_code_list[(l:reusable)] != a:code_list[(l:reusable)]
-            break
-        endif
-        let l:reusable += 1
-    endwhile
-    let l:reusable -= 1
-
     for l:i in range(l:len - 1, 0, -1)
         for l:j in range(l:i, l:len - 1)
-            if l:i <= l:reusable && l:j <= l:reusable
-                let l:dp_val[(l:i)][(l:j)] = s:cache_dp_val[(l:i)][(l:j)]
+            let l:bar_joined_code = join(a:code_list[(l:i):(l:j)], '|')
+            if has_key(s:cache, l:bar_joined_code)
+                let l:tmp_idx = index(s:cache_recent, l:bar_joined_code)
+                call remove(s:cache_recent, l:tmp_idx)
+                call insert(s:cache_recent, l:bar_joined_code, 0)
                 continue
             endif
 
@@ -178,8 +167,8 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
                 if getchar(1)
                     throw s:abort
                 endif
-                let l:left = l:dp_val[(l:i)][(l:middle)]
-                let l:right = l:dp_val[(l:middle + 1)][(l:j)]
+                let l:left = get(s:cache, join(a:code_list[(l:i):(l:middle)], '|'), {'f': -1, 'w': '', 'p': 0})
+                let l:right = get(s:cache, join(a:code_list[(l:middle + 1):(l:j)], '|'), {'f': -1, 'w': '', 'p': 0})
                 if l:left['p'] + l:right['p'] > l:local_best['p']
                     let l:local_best['f'] = l:left['f'] + l:right['f']
                     let l:local_best['w'] = l:left['w'] . l:right['w']
@@ -191,12 +180,15 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
                     endif
                 endif
             endfor
-            let l:dp_val[(l:i)][(l:j)] = l:local_best
+            let s:cache[(l:bar_joined_code)] = l:local_best
+            call insert(s:cache_recent, l:bar_joined_code, 0)
         endfor
     endfor
-    let s:cache_dp_val = l:dp_val
-    let s:cache_code_list = a:code_list
-    return l:dp_val[0][(l:len - 1)]['w']
+    for l:code in s:cache_recent[(g:ime_phonetic_cache_size):]
+        unlet s:cache[(l:code)]
+    endfor
+    let s:cache_recent = s:cache_recent[:(g:ime_phonetic_cache_size - 1)]
+    return s:cache[join(a:code_list, '|')]['w']
 endfunction " }}}
 
 
@@ -269,3 +261,9 @@ function! ime_phonetic#info ()
     \ 'trigger': phonetic_utils#code_set() + [' ', '''', ':'],
     \ }
 endfunction
+
+
+if !exists('g:ime_phonetic_cache_size') ||
+            \ type(g:ime_phonetic_cache_size) != type(0)
+    let g:ime_phonetic_cache_size = 1000
+endif
