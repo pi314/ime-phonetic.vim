@@ -3,6 +3,7 @@ let s:max_length = 0
 
 " s:cache[s] stores the best sentence of string s
 let s:cache = {}
+let s:cache_recent = []
 
 
 function! s:log (...)
@@ -17,8 +18,9 @@ function! ime_phonetic#_InjectTableForTesting (table, max_length) " {{{
     let s:table = a:table
     let s:max_length = a:max_length
 
-    " invalid cache
+    " cache invalidation
     let s:cache = {}
+    let s:cache_recent = []
 endfunction " }}}
 
 
@@ -149,6 +151,9 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
         for l:j in range(l:i, l:len - 1)
             let l:bar_joined_code = join(a:code_list[(l:i):(l:j)], '|')
             if has_key(s:cache, l:bar_joined_code)
+                let l:tmp_idx = index(s:cache_recent, l:bar_joined_code)
+                call remove(s:cache_recent, l:tmp_idx)
+                call insert(s:cache_recent, l:bar_joined_code, 0)
                 continue
             endif
 
@@ -175,9 +180,15 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
                     endif
                 endif
             endfor
-            let s:cache[l:bar_joined_code] = l:local_best
+            let s:cache[(l:bar_joined_code)] = l:local_best
+            call insert(s:cache_recent, l:bar_joined_code, 0)
+            call s:log(s:cache_recent)
         endfor
     endfor
+    for l:code in s:cache_recent[(g:ime_phonetic_cache_size):]
+        unlet s:cache[(l:code)]
+    endfor
+    let s:cache_recent = s:cache_recent[:(g:ime_phonetic_cache_size - 1)]
     return s:cache[join(a:code_list, '|')]['w']
 endfunction " }}}
 
@@ -242,6 +253,11 @@ endfunction
 
 
 function! ime_phonetic#info ()
+    if !exists('g:ime_phonetic_cache_size') ||
+                \ type(g:ime_phonetic_cache_size) != type(0)
+        let g:ime_phonetic_cache_size = 1000
+    endif
+
     return {
     \ 'type': 'standalone',
     \ 'icon': '[注]',
