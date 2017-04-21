@@ -252,11 +252,6 @@ endfunction
 
 
 function! ime_phonetic#info ()
-    if !exists('g:ime_phonetic_cache_size') ||
-                \ type(g:ime_phonetic_cache_size) != type(0)
-        let g:ime_phonetic_cache_size = 1000
-    endif
-
     return {
     \ 'type': 'standalone',
     \ 'icon': '[注]',
@@ -266,3 +261,9 @@ function! ime_phonetic#info ()
     \ 'trigger': phonetic_utils#code_set() + [' ', '''', ':'],
     \ }
 endfunction
+
+
+if !exists('g:ime_phonetic_cache_size') ||
+            \ type(g:ime_phonetic_cache_size) != type(0)
+    let g:ime_phonetic_cache_size = 1000
+endif
