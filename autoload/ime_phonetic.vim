@@ -182,7 +182,6 @@ function! ime_phonetic#_FindBestSentence (code_list) " {{{
             endfor
             let s:cache[(l:bar_joined_code)] = l:local_best
             call insert(s:cache_recent, l:bar_joined_code, 0)
-            call s:log(s:cache_recent)
         endfor
     endfor
     for l:code in s:cache_recent[(g:ime_phonetic_cache_size):]
