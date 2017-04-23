@@ -98,11 +98,12 @@ function! ime_phonetic#_GetBestWord (code_list) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic#_GetFirstBestWord (code_list) " {{{
-    " This function collects all words match a:code_list
-    " and returns the one has maximum frequency
-    "
-    " This function returns the longest result
+function! s:cmp_word (w1, w2) " {{{
+    return (a:w1['f'] < a:w2['f']) - (a:w1['f'] > a:w2['f'])
+endfunction " }}}
+function! ime_phonetic#_GetLongestMatchingWords (code_list) " {{{
+    " This function returns all words match a:code_list
+    " And if none, returns the longest matched results
 
     let [l:probes_hist, l:leaves_hist] =
                 \ ime_phonetic#_SearchWord(a:code_list)
@@ -116,25 +117,18 @@ function! ime_phonetic#_GetFirstBestWord (code_list) " {{{
         call remove(l:leaves_hist, 0)
     endwhile
 
-    let l:best = {'w': '', 'f': -1}
-    " Find the word that has maximum frequency
-    for l:leaf in l:leaves_hist[0] + map(l:probes_hist[0], 'get(v:val, ''_'', [])')
-        for l:record in l:leaf
-            if getchar(1)
-                throw s:abort
-            endif
-
-            if l:record['f'] > l:best['f']
-                let l:best = l:record
-            endif
-        endfor
+    let l:words = []
+    for l:tmp in l:leaves_hist[0] + map(l:probes_hist[0], 'get(v:val, ''_'', [])')
+        call extend(l:words, l:tmp)
     endfor
 
-    " Prevent further computation polluting the table
-    return {
-        \ 'word': l:best['w'],
-        \ 'remain': a:code_list[(len(l:probes_hist) - 1):],
-        \ }
+    return map(
+        \ map(
+            \ l:words,
+            \ 'v:val[''w'']'
+        \ ),
+        \ 'v:val . phonetic_utils#CodeList2SymbolStr(a:code_list[(len(l:probes_hist) - 1):])'
+    \ )
 endfunction " }}}
 
 
@@ -195,7 +189,7 @@ endfunction " }}}
 function! s:CompFreq (a, b) " {{{
     return a:a['f'] < a:b['f']
 endfunction " }}}
-function! ime_phonetic#_QueryOneWord (code_list) " {{{
+function! ime_phonetic#_QueryOneChar (code_list) " {{{
     if a:code_list == []
         return []
     endif
@@ -235,16 +229,16 @@ function! ime_phonetic#handler (matchobj, trigger)
 
         " Special case for single character
         if a:trigger == ''''
-            return [l:symbol_str] + ime_phonetic#_QueryOneWord(l:code_list)
+            return [l:symbol_str] + ime_phonetic#_QueryOneChar(l:code_list)
         endif
 
         let l:best_sentence = ime_phonetic#_FindBestSentence(l:code_list)
-        let l:first_word = ime_phonetic#_GetFirstBestWord(l:code_list)
+        let l:words = ime_phonetic#_GetLongestMatchingWords(l:code_list)
         return [
             \ l:symbol_str,
             \ l:best_sentence,
-            \ l:first_word['word'] . phonetic_utils#CodeList2SymbolStr(l:first_word['remain']),
-            \ ] + ime_phonetic#_QueryOneWord(l:code_list)
+            \ ] + l:words +
+            \ ime_phonetic#_QueryOneChar(l:code_list)
     catch /^ime_phonetic_abort$/
         return [l:symbol_str]
     endtry
