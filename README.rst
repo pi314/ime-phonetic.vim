@@ -46,6 +46,13 @@ ime-phonetic.vim 是 `ime.vim <https://github.com/pi314/ime.vim>`_ 的 standalon
 本套件仍然在開發中，有一些已知的問題，若發現問題或是有開發想法，歡迎開 issue。
 
 
+詞庫
+-------------------------------------------------------------------------------
+ime-phonetic.vim 的詞庫是由為 MIT License 授權的 `小麥注音 <https://mcbopomofo.openvanilla.org/>`_ 轉換而來
+
+轉換的 Makefile/script 在 `這裡 <https://github.com/pi314/phonetic-table>`_
+
+
 授權
 -------------------------------------------------------------------------------
 本軟體使用 2-clause BSD license 發佈，請參考 LICENSE.txt
