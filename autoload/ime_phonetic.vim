@@ -5,6 +5,8 @@ let s:max_length = 0
 let s:cache = {}
 let s:cache_recent = []
 
+let s:punctuation_state = 0
+
 
 function! s:log (...)
     call call(function('ime#log'), ['phonetic'] + a:000)
@@ -207,6 +209,16 @@ endfunction " }}}
 
 
 function! ime_phonetic#handler (matchobj, trigger)
+    if s:punctuation_state
+        let s:punctuation_state = 0
+        call ime#icon('phonetic', '[注]')
+        return [get({
+        \ ',': '，',
+        \ '.': '。',
+        \ ':': '：',
+        \ }, a:trigger, '')]
+    endif
+
     if s:table == {}
         let [s:table, s:max_length] = phonetic_table#table()
     endif
@@ -245,6 +257,17 @@ function! ime_phonetic#handler (matchobj, trigger)
 endfunction
 
 
+function ime_phonetic#submode (switch)
+    if a:switch == '' || s:punctuation_state == 1
+        let s:punctuation_state = 0
+        call ime#icon('phonetic', '[注]')
+    elseif s:punctuation_state == 0
+        let s:punctuation_state = 1
+        call ime#icon('phonetic', '[，]')
+    endif
+endfunction
+
+
 function! ime_phonetic#info ()
     return {
     \ 'type': 'standalone',
@@ -253,6 +276,7 @@ function! ime_phonetic#info ()
     \ 'pattern':  '\v%(|:|['. phonetic_utils#symbols() .']['. phonetic_utils#symbols() .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
     \ 'trigger': phonetic_utils#code_set() + [' ', '''', ':'],
+    \ 'submode':function('ime_phonetic#submode'),
     \ }
 endfunction
 
