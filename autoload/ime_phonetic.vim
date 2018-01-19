@@ -6,6 +6,7 @@ let s:cache = {}
 let s:cache_recent = []
 
 let s:punctuation_state = 0
+let s:last_symbol_str = ''
 
 
 function! s:log (...)
@@ -240,9 +241,12 @@ function! ime_phonetic#handler (matchobj, trigger)
         let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
 
         " Special case for single character
-        if a:trigger == ''''
+        if a:trigger == '''' && s:last_symbol_str != l:symbol_str
+            let s:last_symbol_str = l:symbol_str
             return [l:symbol_str] + ime_phonetic#_QueryOneChar(l:code_list)
         endif
+
+        let s:last_symbol_str = ''
 
         let l:best_sentence = ime_phonetic#_FindBestSentence(l:code_list)
         let l:words = ime_phonetic#_GetLongestMatchingWords(l:code_list)
