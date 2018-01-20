@@ -1,10 +1,29 @@
+let s:punctuation_state = 0
+
+
 function! ime_phonetic#handler (matchobj, trigger)
+    if s:punctuation_state
+        let s:punctuation_state = 0
+        call ime#icon('phonetic', '[注]')
+        return [get({
+        \ ',': '，',
+        \ '.': '。',
+        \ ':': '：',
+        \ }, a:trigger, '')]
+    endif
+
     return ime_phonetic_core#handler(a:matchobj, a:trigger)
 endfunction
 
 
 function ime_phonetic#submode (switch)
-    call ime_phonetic_core#submode (a:switch)
+    if a:switch == '' || s:punctuation_state == 1
+        let s:punctuation_state = 0
+        call ime#icon('phonetic', '[注]')
+    elseif s:punctuation_state == 0
+        let s:punctuation_state = 1
+        call ime#icon('phonetic', '[，]')
+    endif
 endfunction
 
 

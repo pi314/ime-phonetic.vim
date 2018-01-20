@@ -5,7 +5,6 @@ let s:max_length = 0
 let s:cache = {}
 let s:cache_recent = []
 
-let s:punctuation_state = 0
 let s:last_symbol_str = ''
 
 
@@ -207,16 +206,6 @@ endfunction " }}}
 
 
 function! ime_phonetic_core#handler (matchobj, trigger)
-    if s:punctuation_state
-        let s:punctuation_state = 0
-        call ime#icon('phonetic', '[注]')
-        return [get({
-        \ ',': '，',
-        \ '.': '。',
-        \ ':': '：',
-        \ }, a:trigger, '')]
-    endif
-
     if s:table == {}
         let [s:table, s:max_length] = phonetic_table#table()
     endif
@@ -255,15 +244,4 @@ function! ime_phonetic_core#handler (matchobj, trigger)
     catch /^ime_phonetic_abort$/
         return [l:symbol_str]
     endtry
-endfunction
-
-
-function ime_phonetic_core#submode (switch)
-    if a:switch == '' || s:punctuation_state == 1
-        let s:punctuation_state = 0
-        call ime#icon('phonetic', '[注]')
-    elseif s:punctuation_state == 0
-        let s:punctuation_state = 1
-        call ime#icon('phonetic', '[，]')
-    endif
 endfunction
