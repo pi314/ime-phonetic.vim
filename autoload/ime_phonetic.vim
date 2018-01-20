@@ -12,7 +12,20 @@ function! ime_phonetic#handler (matchobj, trigger)
         \ }, a:trigger, '')]
     endif
 
-    return ime_phonetic_core#handler(a:matchobj, a:trigger)
+    let l:symbol_str = a:matchobj[0]
+
+    " The single quote key only triggers the handler,
+    " not insert any chars
+    if a:trigger != ''''
+        let l:symbol_str .= phonetic_utils#key_to_code(a:trigger)
+    endif
+
+    " No phonetic symbol given, just return it back
+    if match(l:symbol_str, '\v^ *$') != -1
+        return [l:symbol_str]
+    endif
+
+    return ime_phonetic_core#handler(l:symbol_str, a:trigger == '''')
 endfunction
 
 

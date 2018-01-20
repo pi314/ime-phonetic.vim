@@ -205,31 +205,18 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic_core#handler (matchobj, trigger)
+function! ime_phonetic_core#handler (symbol_str, single_char)
     if s:table == {}
         let [s:table, s:max_length] = phonetic_table#table()
     endif
 
-    let l:symbol_str = a:matchobj[0]
-
-    " The single quote key only triggers the handler,
-    " not insert any chars
-    if a:trigger != ''''
-        let l:symbol_str .= phonetic_utils#key_to_code(a:trigger)
-    endif
-
-    " No phonetic symbol given, just return it back
-    if match(l:symbol_str, '\v^ *$') != -1
-        return [l:symbol_str]
-    endif
-
     try
-        let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
+        let l:code_list = phonetic_utils#SymbolStr2CodeList(a:symbol_str)
 
         " Special case for single character
-        if a:trigger == '''' && s:last_symbol_str != l:symbol_str
-            let s:last_symbol_str = l:symbol_str
-            return [l:symbol_str] + ime_phonetic_core#_QueryOneChar(l:code_list)
+        if a:single_char && s:last_symbol_str != a:symbol_str
+            let s:last_symbol_str = a:symbol_str
+            return [a:symbol_str] + ime_phonetic_core#_QueryOneChar(l:code_list)
         endif
 
         let s:last_symbol_str = ''
@@ -237,11 +224,11 @@ function! ime_phonetic_core#handler (matchobj, trigger)
         let l:best_sentence = ime_phonetic_core#_FindBestSentence(l:code_list)
         let l:words = ime_phonetic_core#_GetLongestMatchingWords(l:code_list)
         return [
-            \ l:symbol_str,
+            \ a:symbol_str,
             \ l:best_sentence,
             \ ] + l:words +
             \ ime_phonetic_core#_QueryOneChar(l:code_list)
     catch /^ime_phonetic_abort$/
-        return [l:symbol_str]
+        return [a:symbol_str]
     endtry
 endfunction
