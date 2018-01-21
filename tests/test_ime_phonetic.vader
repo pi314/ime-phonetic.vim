@@ -26,7 +26,7 @@ Execute ([UT] Utility: ime_phonetic_core#_GetBestWord):
 Execute ([UT] Utility: ime_phonetic_core#_GetLongestMatchingWords):
   let Testee = function('ime_phonetic_core#_GetLongestMatchingWords')
   AssertEqual Testee([]),                        []
-  AssertEqual Testee(['hk4', 'nji3']),           ['策ㄙㄨㄛˇ', '測ㄙㄨㄛˇ']
+  AssertEqual Testee(['hk4', 'nji3']),           [['策', ['nji3']], ['測', ['nji3']]]
 
 
 Execute ([UT] Utility: ime_phonetic_core#_FindBestSentence):
@@ -44,7 +44,13 @@ Execute ([UT] FIXME: use real database to test, may fail):
   call call('ime_phonetic_core#_InjectTableForTesting', phonetic_table#table())
 
   let Testee = function('ime_phonetic_core#_GetLongestMatchingWords')
-  AssertEqual Testee(['hk4', 'g4', 'vu;', 'rul']),  ['測試ㄒㄧㄤㄐㄧㄠ', '策士ㄒㄧㄤㄐㄧㄠ', '側室ㄒㄧㄤㄐㄧㄠ', '側視ㄒㄧㄤㄐㄧㄠ', '策試ㄒㄧㄤㄐㄧㄠ']
+  AssertEqual Testee(['hk4', 'g4', 'vu;', 'rul']),  [
+      \ ['測試', ['vu;', 'rul']],
+      \ ['策士', ['vu;', 'rul']],
+      \ ['側室', ['vu;', 'rul']],
+      \ ['側視', ['vu;', 'rul']],
+      \ ['策試', ['vu;', 'rul']]
+      \ ]
 
   let Testee = function('ime_phonetic_core#_FindBestSentence')
   AssertEqual Testee(['ji3', 'g4', 'su3', '184', 'fm4', 'a94', 'cji3', 't96']),  '我是你爸去賣火柴'
