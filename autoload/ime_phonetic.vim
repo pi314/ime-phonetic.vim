@@ -58,9 +58,3 @@ function! ime_phonetic#info ()
     \ 'submode':function('ime_phonetic#submode'),
     \ }
 endfunction
-
-
-if !exists('g:ime_phonetic_cache_size') ||
-            \ type(g:ime_phonetic_cache_size) != type(0)
-    let g:ime_phonetic_cache_size = 1000
-endif

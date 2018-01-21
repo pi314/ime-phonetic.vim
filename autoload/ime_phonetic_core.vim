@@ -228,3 +228,9 @@ function! ime_phonetic_core#handler (code_list, single_char)
         return []
     endtry
 endfunction
+
+
+if !exists('g:ime_phonetic_cache_size') ||
+            \ type(g:ime_phonetic_cache_size) != type(0)
+    let g:ime_phonetic_cache_size = 1000
+endif
