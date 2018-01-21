@@ -126,7 +126,7 @@ function! ime_phonetic_core#_GetLongestMatchingWords (code_list) " {{{
             \ l:words,
             \ 'v:val[''w'']'
         \ ),
-        \ 'v:val . phonetic_utils#CodeList2SymbolStr(a:code_list[(len(l:probes_hist) - 1):])'
+        \ '[v:val, a:code_list[(len(l:probes_hist) - 1):]]'
     \ )
 endfunction " }}}
 
@@ -201,7 +201,7 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
                 \ s:table[(l:key)]
                 \ )
     endfor
-    return map(sort(copy(l:result), "<SID>CompFreq"), 'v:val[''w''] . phonetic_utils#CodeList2SymbolStr(a:code_list[1:])')
+    return map(sort(copy(l:result), "<SID>CompFreq"), '[v:val[''w''], a:code_list[1:]]')
 endfunction " }}}
 
 
@@ -221,9 +221,8 @@ function! ime_phonetic_core#handler (code_list, single_char)
 
         let l:best_sentence = ime_phonetic_core#_FindBestSentence(a:code_list)
         let l:words = ime_phonetic_core#_GetLongestMatchingWords(a:code_list)
-        return [
-            \ l:best_sentence,
-            \ ] + l:words +
+        return [[l:best_sentence, []]] +
+            \ l:words +
             \ ime_phonetic_core#_QueryOneChar(a:code_list)
     catch /^ime_phonetic_abort$/
         return []

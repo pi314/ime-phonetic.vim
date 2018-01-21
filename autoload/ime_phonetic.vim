@@ -1,6 +1,11 @@
 let s:punctuation_state = 0
 
 
+function! s:log (...)
+    call call(function('ime#log'), ['phonetic'] + a:000)
+endfunction
+
+
 function! ime_phonetic#handler (matchobj, trigger)
     if s:punctuation_state
         let s:punctuation_state = 0
@@ -26,7 +31,8 @@ function! ime_phonetic#handler (matchobj, trigger)
     endif
 
     let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
-    return [l:symbol_str] + ime_phonetic_core#handler(l:code_list, a:trigger == '''')
+    let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
+    return [l:symbol_str] + map(l:res, 'v:val[0] . phonetic_utils#CodeList2SymbolStr(v:val[1])')
 endfunction
 
 
