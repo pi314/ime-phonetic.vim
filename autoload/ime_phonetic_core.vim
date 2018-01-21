@@ -205,30 +205,27 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic_core#handler (symbol_str, single_char)
+function! ime_phonetic_core#handler (code_list, single_char)
     if s:table == {}
         let [s:table, s:max_length] = phonetic_table#table()
     endif
 
     try
-        let l:code_list = phonetic_utils#SymbolStr2CodeList(a:symbol_str)
-
         " Special case for single character
-        if a:single_char && s:last_symbol_str != a:symbol_str
-            let s:last_symbol_str = a:symbol_str
-            return [a:symbol_str] + ime_phonetic_core#_QueryOneChar(l:code_list)
+        if a:single_char && s:last_code_list != join(a:code_list, '|')
+            let s:last_code_list = join(a:code_list, '|')
+            return ime_phonetic_core#_QueryOneChar(a:code_list)
         endif
 
-        let s:last_symbol_str = ''
+        let s:last_code_list = ''
 
-        let l:best_sentence = ime_phonetic_core#_FindBestSentence(l:code_list)
-        let l:words = ime_phonetic_core#_GetLongestMatchingWords(l:code_list)
+        let l:best_sentence = ime_phonetic_core#_FindBestSentence(a:code_list)
+        let l:words = ime_phonetic_core#_GetLongestMatchingWords(a:code_list)
         return [
-            \ a:symbol_str,
             \ l:best_sentence,
             \ ] + l:words +
-            \ ime_phonetic_core#_QueryOneChar(l:code_list)
+            \ ime_phonetic_core#_QueryOneChar(a:code_list)
     catch /^ime_phonetic_abort$/
-        return [a:symbol_str]
+        return []
     endtry
 endfunction

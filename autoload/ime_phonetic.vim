@@ -25,7 +25,8 @@ function! ime_phonetic#handler (matchobj, trigger)
         return [l:symbol_str]
     endif
 
-    return ime_phonetic_core#handler(l:symbol_str, a:trigger == '''')
+    let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
+    return [l:symbol_str] + ime_phonetic_core#handler(l:code_list, a:trigger == '''')
 endfunction
 
 
