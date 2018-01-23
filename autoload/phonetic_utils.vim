@@ -254,6 +254,8 @@ function! s:Init ()
     let s:code_comb['s']['k']['_'] = 1
     let s:code_comb['s']['9'] = {}
     let s:code_comb['s']['9']['_'] = 1
+    let s:code_comb['s']['o'] = {}
+    let s:code_comb['s']['o']['_'] = 1
     let s:code_comb['s']['l'] = {}
     let s:code_comb['s']['l']['_'] = 1
     let s:code_comb['s']['.'] = {}
