@@ -34,6 +34,7 @@ endfunction " }}}
 
 
 function! ime_phonetic_core#_SearchWord (code_list) " {{{
+    " This function does search process and keep the searching history
     let l:probes_hist = [[s:table]]         " stack
     let l:leaves_hist = [[]]                " stack
     let l:code_list = copy(a:code_list)
@@ -45,20 +46,27 @@ function! ime_phonetic_core#_SearchWord (code_list) " {{{
         let l:next_probes = []
         let l:next_leaves = []
         let l:code = l:code_list[0]
+        if type(l:code) == type([])
+            let l:codes = l:code
+        else
+            let l:codes = [l:code]
+        endif
         let l:probes = l:probes_hist[0]
         for l:probe in l:probes
-            for l:key in ime_phonetic_core#_GetAllKeyStartsWith(l:probe, l:code)
-                if getchar(1)
-                    throw s:abort
-                endif
+            for l:code in l:codes
+                for l:key in ime_phonetic_core#_GetAllKeyStartsWith(l:probe, l:code)
+                    if getchar(1)
+                        throw s:abort
+                    endif
 
-                " The table is sqeezed, so the leaves have to be stored
-                " separately
-                if type(l:probe[(l:key)]) == type({})
-                    call add(l:next_probes, l:probe[(l:key)])
-                else
-                    call add(l:next_leaves, l:probe[(l:key)])
-                endif
+                    " The table is sqeezed, so the leaves have to be stored
+                    " separately
+                    if type(l:probe[(l:key)]) == type({})
+                        call add(l:next_probes, l:probe[(l:key)])
+                    else
+                        call add(l:next_leaves, l:probe[(l:key)])
+                    endif
+                endfor
             endfor
         endfor
         call insert(l:probes_hist, l:next_probes, 0)
@@ -123,7 +131,7 @@ function! ime_phonetic_core#_GetLongestMatchingWords (code_list) " {{{
 
     return map(
         \ map(
-            \ l:words,
+            \ sort(copy(l:words), "<SID>CompFreq"),
             \ 'v:val[''w'']'
         \ ),
         \ '[v:val, a:code_list[(len(l:probes_hist) - 1):]]'
@@ -142,11 +150,11 @@ function! ime_phonetic_core#_FindBestSentence (code_list) " {{{
 
     for l:i in range(l:len - 1, 0, -1)
         for l:j in range(l:i, l:len - 1)
-            let l:bar_joined_code = join(a:code_list[(l:i):(l:j)], '|')
-            if has_key(s:cache, l:bar_joined_code)
-                let l:tmp_idx = index(s:cache_recent, l:bar_joined_code)
+            let l:serialized_code_list = ime_phonetic_core#SerializeCodeList(a:code_list[(l:i):(l:j)])
+            if has_key(s:cache, l:serialized_code_list)
+                let l:tmp_idx = index(s:cache_recent, l:serialized_code_list)
                 call remove(s:cache_recent, l:tmp_idx)
-                call insert(s:cache_recent, l:bar_joined_code, 0)
+                call insert(s:cache_recent, l:serialized_code_list, 0)
                 continue
             endif
 
@@ -160,8 +168,12 @@ function! ime_phonetic_core#_FindBestSentence (code_list) " {{{
                 if getchar(1)
                     throw s:abort
                 endif
-                let l:left = get(s:cache, join(a:code_list[(l:i):(l:middle)], '|'), {'f': -1, 'w': '', 'p': 0})
-                let l:right = get(s:cache, join(a:code_list[(l:middle + 1):(l:j)], '|'), {'f': -1, 'w': '', 'p': 0})
+                let l:left = get(s:cache,
+                    \ ime_phonetic_core#SerializeCodeList(a:code_list[(l:i):(l:middle)]),
+                    \ {'f': -1, 'w': '', 'p': 0})
+                let l:right = get(s:cache,
+                    \ ime_phonetic_core#SerializeCodeList(a:code_list[(l:middle + 1):(l:j)]),
+                    \ {'f': -1, 'w': '', 'p': 0})
                 if l:left['p'] + l:right['p'] > l:local_best['p']
                     let l:local_best['f'] = l:left['f'] + l:right['f']
                     let l:local_best['w'] = l:left['w'] . l:right['w']
@@ -173,15 +185,15 @@ function! ime_phonetic_core#_FindBestSentence (code_list) " {{{
                     endif
                 endif
             endfor
-            let s:cache[(l:bar_joined_code)] = l:local_best
-            call insert(s:cache_recent, l:bar_joined_code, 0)
+            let s:cache[(l:serialized_code_list)] = l:local_best
+            call insert(s:cache_recent, l:serialized_code_list, 0)
         endfor
     endfor
     for l:code in s:cache_recent[(g:ime_phonetic_cache_size):]
         unlet s:cache[(l:code)]
     endfor
     let s:cache_recent = s:cache_recent[:(g:ime_phonetic_cache_size - 1)]
-    return s:cache[join(a:code_list, '|')]['w']
+    return s:cache[ime_phonetic_core#SerializeCodeList(a:code_list)]['w']
 endfunction " }}}
 
 
@@ -205,6 +217,11 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
 endfunction " }}}
 
 
+function ime_phonetic_core#SerializeCodeList (code_list)
+    return join(map(a:code_list, 'type(v:val) == type([]) ? join(v:val, '','') : v:val'), '|')
+endfunction
+
+
 function! ime_phonetic_core#handler (code_list, single_char)
     if s:table == {}
         let [s:table, s:max_length] = phonetic_table#table()
@@ -212,8 +229,8 @@ function! ime_phonetic_core#handler (code_list, single_char)
 
     try
         " Special case for single character
-        if a:single_char && s:last_code_list != join(a:code_list, '|')
-            let s:last_code_list = join(a:code_list, '|')
+        if a:single_char && s:last_code_list != ime_phonetic_core#SerializeCodeList(a:code_list)
+            let s:last_code_list = ime_phonetic_core#SerializeCodeList(a:code_list)
             return ime_phonetic_core#_QueryOneChar(a:code_list)
         endif
 
