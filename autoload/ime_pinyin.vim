@@ -52,15 +52,9 @@ function! ime_pinyin#info ()
     \ 'type': 'standalone',
     \ 'icon': '[拼]',
     \ 'description': 'Phonetic input mode',
-    \ 'pattern':  '\v%(|:|['. zhuyin_utils#symbols() .']['. zhuyin_utils#symbols() .' ]*)$',
+    \ 'pattern':  '\v%([a-zA-Z ]*)$',
     \ 'handler': function('ime_pinyin#handler'),
     \ 'trigger': zhuyin_utils#code_set() + [' ', '''', ':'],
     \ 'submode':function('ime_pinyin#submode'),
     \ }
 endfunction
-
-
-if !exists('g:ime_phonetic_cache_size') ||
-            \ type(g:ime_phonetic_cache_size) != type(0)
-    let g:ime_phonetic_cache_size = 1000
-endif
