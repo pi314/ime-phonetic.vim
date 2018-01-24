@@ -1,5 +1,5 @@
 Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
-  let Testee = function('phonetic_utils#SymbolStr2CodeList')
+  let Testee = function('phonetic_utils#ZhuyinStr2CodeList')
   AssertEqual Testee(''),                         []
   AssertEqual Testee('ㄘㄜˋ'),                    ['hk4']
   AssertEqual Testee('ㄘㄜˋㄕˋ'),                 ['hk4', 'g4']
@@ -17,8 +17,8 @@ Execute ([UT] phonetic_utils#SymbolStr2CodeList()):
   AssertEqual Testee('ㄓㄨˊˋ'),                   ['5j6']
 
 
-Execute ([UT] phonetic_utils#CodeList2SymbolStr()):
-  let Testee = function('phonetic_utils#CodeList2SymbolStr')
+Execute ([UT] phonetic_utils#CodeList2ZhuyinStr()):
+  let Testee = function('phonetic_utils#CodeList2ZhuyinStr')
   AssertEqual Testee([]),                              ''
   AssertEqual Testee(['']),                            ''
   AssertEqual Testee(['hk4']),                         'ㄘㄜˋ'

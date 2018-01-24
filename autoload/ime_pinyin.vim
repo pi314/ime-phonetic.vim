@@ -30,9 +30,9 @@ function! ime_pinyin#handler (matchobj, trigger)
         return [l:symbol_str]
     endif
 
-    let l:code_list = phonetic_utils#SymbolStr2CodeList(l:symbol_str)
+    let l:code_list = phonetic_utils#ZhuyinStr2CodeList(l:symbol_str)
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
-    return [l:symbol_str] + map(l:res, 'v:val[0] . phonetic_utils#CodeList2SymbolStr(v:val[1])')
+    return [l:symbol_str] + map(l:res, 'v:val[0] . phonetic_utils#CodeList2ZhuyinStr(v:val[1])')
 endfunction
 
 
