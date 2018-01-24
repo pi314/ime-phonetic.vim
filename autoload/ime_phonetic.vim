@@ -22,7 +22,7 @@ function! ime_phonetic#handler (matchobj, trigger)
     " The single quote key only triggers the handler,
     " not insert any chars
     if a:trigger != ''''
-        let l:symbol_str .= phonetic_utils#key_to_code(a:trigger)
+        let l:symbol_str .= zhuyin_utils#key_to_code(a:trigger)
     endif
 
     " No phonetic symbol given, just return it back
@@ -30,9 +30,9 @@ function! ime_phonetic#handler (matchobj, trigger)
         return [l:symbol_str]
     endif
 
-    let l:code_list = phonetic_utils#ZhuyinStr2CodeList(l:symbol_str)
+    let l:code_list = zhuyin_utils#ZhuyinStr2CodeList(l:symbol_str)
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
-    return [l:symbol_str] + map(l:res, 'v:val[0] . phonetic_utils#CodeList2ZhuyinStr(v:val[1])')
+    return [l:symbol_str] + map(l:res, 'v:val[0] . zhuyin_utils#CodeList2ZhuyinStr(v:val[1])')
 endfunction
 
 
@@ -52,9 +52,9 @@ function! ime_phonetic#info ()
     \ 'type': 'standalone',
     \ 'icon': '[注]',
     \ 'description': 'Phonetic input mode',
-    \ 'pattern':  '\v%(|:|['. phonetic_utils#symbols() .']['. phonetic_utils#symbols() .' ]*)$',
+    \ 'pattern':  '\v%(|:|['. zhuyin_utils#symbols() .']['. zhuyin_utils#symbols() .' ]*)$',
     \ 'handler': function('ime_phonetic#handler'),
-    \ 'trigger': phonetic_utils#code_set() + [' ', '''', ':'],
+    \ 'trigger': zhuyin_utils#code_set() + [' ', '''', ':'],
     \ 'submode':function('ime_phonetic#submode'),
     \ }
 endfunction

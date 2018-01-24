@@ -432,17 +432,17 @@ function! s:Init ()
 endfunction
 
 
-function! phonetic_utils#symbols ()
+function! zhuyin_utils#symbols ()
     return s:symbols
 endfunction
 
 
-function! phonetic_utils#code_set ()
+function! zhuyin_utils#code_set ()
     return s:code_set
 endfunction
 
 
-function! phonetic_utils#ZhuyinStr2CodeList (zhuyin_str) " {{{
+function! zhuyin_utils#ZhuyinStr2CodeList (zhuyin_str) " {{{
     if a:zhuyin_str == ''
         return []
     elseif a:zhuyin_str =~ '\v^[ ˊˇˋ˙]*$'
@@ -485,12 +485,12 @@ function! phonetic_utils#ZhuyinStr2CodeList (zhuyin_str) " {{{
 endfunction " }}}
 
 
-function! phonetic_utils#key_to_code (key)
+function! zhuyin_utils#key_to_code (key)
     return s:zhuyin_code_map[(a:key)]
 endfunction
 
 
-function! phonetic_utils#CodeList2ZhuyinStr (code_list)
+function! zhuyin_utils#CodeList2ZhuyinStr (code_list)
     return join(map(split(join(a:code_list, ''), '\zs'), 's:zhuyin_code_map[v:val]'), '')
 endfunction
 
