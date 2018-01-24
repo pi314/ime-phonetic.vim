@@ -6,7 +6,7 @@ function! s:log (...)
 endfunction
 
 
-function! ime_phonetic#handler (matchobj, trigger)
+function! ime_zhuyin#handler (matchobj, trigger)
     if s:punctuation_state
         let s:punctuation_state = 0
         call ime#icon('phonetic', '[注]')
@@ -36,7 +36,7 @@ function! ime_phonetic#handler (matchobj, trigger)
 endfunction
 
 
-function ime_phonetic#submode (switch)
+function ime_zhuyin#submode (switch)
     if a:switch == '' || s:punctuation_state == 1
         let s:punctuation_state = 0
         call ime#icon('phonetic', '[注]')
@@ -47,14 +47,14 @@ function ime_phonetic#submode (switch)
 endfunction
 
 
-function! ime_phonetic#info ()
+function! ime_zhuyin#info ()
     return {
     \ 'type': 'standalone',
     \ 'icon': '[注]',
     \ 'description': 'Phonetic input mode',
     \ 'pattern':  '\v%(|:|['. zhuyin_utils#symbols() .']['. zhuyin_utils#symbols() .' ]*)$',
-    \ 'handler': function('ime_phonetic#handler'),
+    \ 'handler': function('ime_zhuyin#handler'),
     \ 'trigger': zhuyin_utils#code_set() + [' ', '''', ':'],
-    \ 'submode':function('ime_phonetic#submode'),
+    \ 'submode':function('ime_zhuyin#submode'),
     \ }
 endfunction

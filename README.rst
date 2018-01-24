@@ -6,9 +6,9 @@ ime-phonetic.vim 是 `ime.vim <https://github.com/pi314/ime.vim>`_ 的 standalon
 
 安裝
 -------------------------------------------------------------------------------
-安裝此 plugin 以後，請在 ``g:ime_plugins`` 裡面加上 ``'phonetic'`` ： ::
+安裝此 plugin 以後，請在 ``g:ime_plugins`` 裡面加上 ``'zhuyin'`` ： ::
 
-  let g:ime_plugins = ['phonetic']
+  let g:ime_plugins = ['zhuyin']
 
 
 使用
