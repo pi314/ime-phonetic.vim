@@ -29,7 +29,7 @@ endfunction " }}}
 function! ime_phonetic_core#_GetAllKeyStartsWith (table, key) " {{{
     " Return all keys in a:table that starts with a:key
     " for fuzzy input
-    return filter(keys(a:table), 'strpart(v:val, 0, strlen(a:key)) == a:key')
+    return filter(keys(a:table), 'v:val =~# ''^'' . a:key')
 endfunction " }}}
 
 
@@ -206,19 +206,27 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
     endif
 
     let l:result = []
-    for l:key in ime_phonetic_core#_GetAllKeyStartsWith(s:table, a:code_list[0])
-        call extend(l:result,
-                \ type(s:table[(l:key)]) == type({}) ?
-                \ get(s:table[(l:key)], '_', []) :
-                \ s:table[(l:key)]
-                \ )
+    let l:code = a:code_list[0]
+    if type(l:code) == type([])
+        let l:codes = l:code
+    else
+        let l:codes = [l:code]
+    endif
+    for l:code in l:codes
+        for l:key in ime_phonetic_core#_GetAllKeyStartsWith(s:table, l:code)
+            call extend(l:result,
+                    \ type(s:table[(l:key)]) == type({}) ?
+                    \ get(s:table[(l:key)], '_', []) :
+                    \ s:table[(l:key)]
+                    \ )
+        endfor
     endfor
     return map(sort(copy(l:result), "<SID>CompFreq"), '[v:val[''w''], a:code_list[1:]]')
 endfunction " }}}
 
 
 function ime_phonetic_core#SerializeCodeList (code_list)
-    return join(map(a:code_list, 'type(v:val) == type([]) ? join(v:val, '','') : v:val'), '|')
+    return join(map(copy(a:code_list), 'type(v:val) == type([]) ? join(v:val, '','') : v:val'), '|')
 endfunction
 
 
@@ -236,11 +244,17 @@ function! ime_phonetic_core#handler (code_list, single_char)
 
         let s:last_code_list = ''
 
+        call s:log('code_list', a:code_list)
         let l:best_sentence = ime_phonetic_core#_FindBestSentence(a:code_list)
         let l:words = ime_phonetic_core#_GetLongestMatchingWords(a:code_list)
+        let l:one_char = ime_phonetic_core#_QueryOneChar(a:code_list)
+        call s:log('code_list', a:code_list)
+        call s:log('best', l:best_sentence)
+        call s:log('words', l:words)
+        call s:log('one_char', l:one_char)
         return [[l:best_sentence, []]] +
             \ l:words +
-            \ ime_phonetic_core#_QueryOneChar(a:code_list)
+            \ l:one_char
     catch /^ime_phonetic_abort$/
         return []
     endtry

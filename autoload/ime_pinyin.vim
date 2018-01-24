@@ -17,22 +17,23 @@ function! ime_pinyin#handler (matchobj, trigger)
         \ }, a:trigger, '')]
     endif
 
-    let l:symbol_str = a:matchobj[0]
+    let l:pinyin_str = a:matchobj[0]
 
     " The single quote key only triggers the handler,
     " not insert any chars
     if a:trigger != ''''
-        let l:symbol_str .= zhuyin_utils#key_to_code(a:trigger)
+        let l:pinyin_str .= a:trigger
     endif
 
     " No phonetic symbol given, just return it back
-    if match(l:symbol_str, '\v^ *$') != -1
-        return [l:symbol_str]
+    if match(l:pinyin_str, '\v^ *$') != -1
+        return [l:pinyin_str]
     endif
 
-    let l:code_list = zhuyin_utils#ZhuyinStr2CodeList(l:symbol_str)
+    let [l:pinyin_list, l:code_list] = pinyin_utils#PinyinStr2CodeList(l:pinyin_str)
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
-    return [l:symbol_str] + map(l:res, 'v:val[0] . zhuyin_utils#CodeList2ZhuyinStr(v:val[1])')
+    return [join(l:pinyin_list, ' ')] + map(l:res,
+                \ 'v:val[0] . (len(v:val[1]) == 0 ? "" : join(l:pinyin_list[-len(v:val[1]):], " "))')
 endfunction
 
 
@@ -51,10 +52,10 @@ function! ime_pinyin#info ()
     return {
     \ 'type': 'standalone',
     \ 'icon': '[拼]',
-    \ 'description': 'Phonetic input mode',
+    \ 'description': 'Pinyin input mode',
     \ 'pattern':  '\v%([a-zA-Z ]*)$',
     \ 'handler': function('ime_pinyin#handler'),
-    \ 'trigger': zhuyin_utils#code_set() + [' ', '''', ':'],
+    \ 'trigger': split('abcdefghijklmnopqrstuvwxyz', '\zs'),
     \ 'submode':function('ime_pinyin#submode'),
     \ }
 endfunction

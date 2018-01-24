@@ -51,7 +51,7 @@ function! ime_zhuyin#info ()
     return {
     \ 'type': 'standalone',
     \ 'icon': '[注]',
-    \ 'description': 'Phonetic input mode',
+    \ 'description': 'Zhuyin input mode',
     \ 'pattern':  '\v%(|:|['. zhuyin_utils#symbols() .']['. zhuyin_utils#symbols() .' ]*)$',
     \ 'handler': function('ime_zhuyin#handler'),
     \ 'trigger': zhuyin_utils#code_set() + [' ', '''', ':'],

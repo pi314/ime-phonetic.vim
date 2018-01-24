@@ -425,34 +425,38 @@ endfunction
 
 function! pinyin_utils#PinyinStr2CodeList (pinyin_str)
     if a:pinyin_str == ''
-        return []
+        return [[], []]
     endif
 
     try
         let l:char_list = split(a:pinyin_str, '\zs')
-        let l:result = []       " results
+        let l:pinyin_list = []
+        let l:code_list = []       " results
         let l:acc = ''          " one char result
         for l:char in l:char_list
             let l:key = l:acc . l:char
             if l:char == ' ' && l:acc != ''
-                call add(l:result, s:pinyin2code_choice(l:acc))
+                call add(l:pinyin_list, l:acc)
+                call add(l:code_list, s:pinyin2code_choice(l:acc))
                 let l:acc = ''
             elseif l:acc == '' || len(s:pinyin2code_choice(l:key))
                 let l:acc = l:acc . l:char
             else
-                call add(l:result, s:pinyin2code_choice(l:acc))
+                call add(l:pinyin_list, l:acc)
+                call add(l:code_list, s:pinyin2code_choice(l:acc))
                 let l:acc = l:char
             endif
         endfor
         if l:acc != ''
-            call add(l:result, s:pinyin2code_choice(l:acc))
+            call add(l:pinyin_list, l:acc)
+            call add(l:code_list, s:pinyin2code_choice(l:acc))
         endif
-        return l:result
+        return [l:pinyin_list, l:code_list]
     catch
         call s:log('//', 'Cannot parse pinyin str: "'. a:pinyin_str .'"')
         call s:log('||', v:throwpoint)
         call s:log('\\', v:exception)
-        return []
+        return [[], []]
     endtry
 endfunction
 
