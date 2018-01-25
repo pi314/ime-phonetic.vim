@@ -29,7 +29,8 @@ endfunction " }}}
 function! ime_phonetic_core#_GetAllKeyStartsWith (table, key) " {{{
     " Return all keys in a:table that starts with a:key
     " for fuzzy input
-    return filter(keys(a:table), 'v:val =~# ''^'' . a:key')
+    let l:key_len = strlen(a:key)
+    return filter(keys(a:table), 'strpart(v:val, 0, l:key_len) == a:key')
 endfunction " }}}
 
 
