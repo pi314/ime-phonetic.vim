@@ -423,9 +423,9 @@ function! s:pinyin2code_choice(key)
 endfunction
 
 
-function! pinyin_utils#PinyinStr2CodeList (pinyin_str)
+function! pinyin_utils#ParsePinyinStr (pinyin_str)
     if a:pinyin_str == ''
-        return [[], []]
+        return {'pinyin': [], 'code': []}
     endif
 
     try
@@ -451,12 +451,12 @@ function! pinyin_utils#PinyinStr2CodeList (pinyin_str)
             call add(l:pinyin_list, l:acc)
             call add(l:code_list, s:pinyin2code_choice(l:acc))
         endif
-        return [l:pinyin_list, l:code_list]
+        return {'pinyin': (l:pinyin_list), 'code': (l:code_list)}
     catch
         call s:log('//', 'Cannot parse pinyin str: "'. a:pinyin_str .'"')
         call s:log('||', v:throwpoint)
         call s:log('\\', v:exception)
-        return [[], []]
+        return {'pinyin': [], 'code': []}
     endtry
 endfunction
 

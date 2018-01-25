@@ -30,7 +30,9 @@ function! ime_pinyin#handler (matchobj, trigger)
         return [l:pinyin_str]
     endif
 
-    let [l:pinyin_list, l:code_list] = pinyin_utils#PinyinStr2CodeList(l:pinyin_str)
+    let l:res = pinyin_utils#ParsePinyinStr(l:pinyin_str)
+    let l:pinyin_list = l:res['pinyin']
+    let l:code_list = l:res['code']
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
     return [join(l:pinyin_list, ' ')] + map(l:res,
                 \ 'v:val[0] . (len(v:val[1]) == 0 ? "" : join(l:pinyin_list[-len(v:val[1]):], " "))')

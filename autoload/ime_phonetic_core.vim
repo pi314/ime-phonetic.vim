@@ -244,14 +244,9 @@ function! ime_phonetic_core#handler (code_list, single_char)
 
         let s:last_code_list = ''
 
-        call s:log('code_list', a:code_list)
         let l:best_sentence = ime_phonetic_core#_FindBestSentence(a:code_list)
         let l:words = ime_phonetic_core#_GetLongestMatchingWords(a:code_list)
         let l:one_char = ime_phonetic_core#_QueryOneChar(a:code_list)
-        call s:log('code_list', a:code_list)
-        call s:log('best', l:best_sentence)
-        call s:log('words', l:words)
-        call s:log('one_char', l:one_char)
         return [[l:best_sentence, []]] +
             \ l:words +
             \ l:one_char
