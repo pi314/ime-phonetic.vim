@@ -2,14 +2,14 @@ let s:punctuation_state = 0
 
 
 function! s:log (...)
-    call call(function('ime#log'), ['phonetic'] + a:000)
+    call call(function('ime#log'), ['zhuyin'] + a:000)
 endfunction
 
 
 function! ime_zhuyin#handler (matchobj, trigger)
     if s:punctuation_state
         let s:punctuation_state = 0
-        call ime#icon('phonetic', '[注]')
+        call ime#icon('zhuyin', '[注]')
         return [get({
         \ ',': '，',
         \ '.': '。',

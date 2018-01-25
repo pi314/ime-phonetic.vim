@@ -1,5 +1,5 @@
-Execute ([UT] pinyin_utils#SymbolStr2CodeList()):
-  let Testee = function('pinyin_utils#ParsePinyinStr')
+Execute ([UT] ime_pinyin#ParsePinyinStr()):
+  let Testee = function('ime_pinyin#ParsePinyinStr')
   AssertEqual Testee(''),                         {'pinyin': [],
                                                   \'code': []}
   AssertEqual Testee('ce'),                       {'pinyin': ['ce'],
@@ -23,7 +23,7 @@ Execute ([UT] pinyin_utils#SymbolStr2CodeList()):
                                                           \ 'tj9', 'tj;', 'tji',
                                                           \ 'tjo', 'tjp', 'tk', 'tl',
                                                           \ 'tp'],
-                                                      \ ['-', '/', 'k', 'o', 'p']]}
+                                                      \ 'k']}
   AssertEqual Testee('ceshizhongwen'),            {'pinyin': ['ce', 'shi', 'zhong', 'wen'],
                                                   \'code': [['h/', 'hk', 'hp'], ['g'], ['5j/'], ['j/', 'jp']]}
   AssertEqual Testee('du'),                       {'pinyin': ['du'],
