@@ -32,7 +32,11 @@ function! ime_zhuyin#handler (matchobj, trigger)
 
     let l:code_list = zhuyin_utils#ZhuyinStr2CodeList(l:symbol_str)
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
-    return [l:symbol_str] + map(l:res, 'v:val[0] . zhuyin_utils#CodeList2ZhuyinStr(v:val[1])')
+    return [l:symbol_str] + map(l:res,
+                \ '{'.
+                \ '"word": v:val[0] . zhuyin_utils#CodeList2ZhuyinStr(v:val[1]),'.
+                \ '"abbr": v:val[0]'.
+                \ '}')
 endfunction
 
 

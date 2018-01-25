@@ -34,12 +34,21 @@ function! ime_pinyin#handler (matchobj, trigger)
     let l:pinyin_list = l:res['pinyin']
     let l:code_list = l:res['code']
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
+    let l:pll = len(l:pinyin_list)
     return [join(l:pinyin_list, ' ')] + map(l:res,
-                \ 'v:val[0] . (len(v:val[1]) == 0 ? "" : join(l:pinyin_list[-len(v:val[1]):], " "))')
+                \ '{' .
+                \ '"word": v:val[0] . join(l:pinyin_list[(l:pll - len(v:val[1])):], " "),' .
+                \ '"abbr": v:val[0]' .
+                \ '}')
 endfunction
 
 
-function ime_pinyin#submode (switch)
+function! s:join_pinyin_list (pinyin_list)
+    return join(a:pinyin_list, ' ')
+endfunction
+
+
+function! ime_pinyin#submode (switch)
     if a:switch == '' || s:punctuation_state == 1
         let s:punctuation_state = 0
         call ime#icon('phonetic', '[拼]')
