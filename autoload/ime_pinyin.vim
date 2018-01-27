@@ -449,13 +449,10 @@ let s:pinyin_punctuation[']'] = '〕'
 
 
 function! s:pinyin2code_choice(key) " {{{
-    " if has_key(s:pinyin_comb, a:key)
-    "     return s:pinyin_comb[(a:key)]
-    " endif
-    " if strlen(a:key) == 1
-        return sort(map(filter(keys(s:pinyin_comb), 'v:val =~# ''^'' . a:key'), 's:pinyin_comb[(v:val)]'))
-    " endif
-    " return []
+    if has_key(s:pinyin_comb, a:key)
+        return s:pinyin_comb[(a:key)]
+    endif
+    return sort(map(filter(keys(s:pinyin_comb), 'v:val =~# ''^'' . a:key'), 's:pinyin_comb[(v:val)]'))
 endfunction " }}}
 
 
