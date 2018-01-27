@@ -1,5 +1,5 @@
-Execute ([UT] zhuyin_utils#ParseZhuyinStr()):
-  let Testee = function('zhuyin_utils#ParseZhuyinStr')
+Execute ([UT] ime_zhuyin#ParseZhuyinStr()):
+  let Testee = function('ime_zhuyin#ParseZhuyinStr')
 
   AssertEqual Testee(''),                         {'zhuyin': [],
                                                   \'code': []}
