@@ -464,8 +464,8 @@ function! ime_pinyin#ParsePinyinStr (pinyin_str) " {{{
     try
         let l:char_list = split(a:pinyin_str, '\zs')
         let l:pinyin_list = []
-        let l:code_list = []       " results
-        let l:acc = ''          " one char result
+        let l:code_list = []
+        let l:acc = ''
         for l:char in l:char_list
             let l:key = l:acc . l:char
             if l:char == ' ' && l:acc != ''

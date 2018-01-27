@@ -26,11 +26,14 @@ function! ime_phonetic_core#_InjectTableForTesting (table, max_length) " {{{
 endfunction " }}}
 
 
-function! ime_phonetic_core#_GetAllKeyStartsWith (table, key) " {{{
-    " Return all keys in a:table that starts with a:key
-    " for fuzzy input
-    let l:key_len = strlen(a:key)
-    return filter(keys(a:table), 'strpart(v:val, 0, l:key_len) == a:key')
+function! s:get_all_sound_comb (table, key) " {{{
+    if a:key =~# '\v[ 3467]$'
+        return has_key(a:table, a:key) ? [(a:key)] : []
+    endif
+
+    return filter(
+                \ [a:key.' ', a:key.'3', a:key.'4', a:key.'6', a:key.'7'],
+                \ 'has_key(a:table, v:val)')
 endfunction " }}}
 
 
@@ -55,7 +58,7 @@ function! ime_phonetic_core#_SearchWord (code_list) " {{{
         let l:probes = l:probes_hist[0]
         for l:probe in l:probes
             for l:code in l:codes
-                for l:key in ime_phonetic_core#_GetAllKeyStartsWith(l:probe, l:code)
+                for l:key in s:get_all_sound_comb(l:probe, l:code)
                     if getchar(1)
                         throw s:abort
                     endif
@@ -214,7 +217,7 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
         let l:codes = [l:code]
     endif
     for l:code in l:codes
-        for l:key in ime_phonetic_core#_GetAllKeyStartsWith(s:table, l:code)
+        for l:key in s:get_all_sound_comb(s:table, l:code)
             call extend(l:result,
                     \ type(s:table[(l:key)]) == type({}) ?
                     \ get(s:table[(l:key)], '_', []) :
@@ -226,7 +229,7 @@ function! ime_phonetic_core#_QueryOneChar (code_list) " {{{
 endfunction " }}}
 
 
-function ime_phonetic_core#SerializeCodeList (code_list)
+function! ime_phonetic_core#SerializeCodeList (code_list)
     return join(map(copy(a:code_list), 'type(v:val) == type([]) ? join(v:val, '','') : v:val'), '|')
 endfunction
 
@@ -259,5 +262,5 @@ endfunction
 
 if !exists('g:ime_phonetic_cache_size') ||
             \ type(g:ime_phonetic_cache_size) != type(0)
-    let g:ime_phonetic_cache_size = 1000
+    let g:ime_phonetic_cache_size = 2000
 endif

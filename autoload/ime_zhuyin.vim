@@ -17,25 +17,28 @@ function! ime_zhuyin#handler (matchobj, trigger)
         \ }, a:trigger, '')]
     endif
 
-    let l:symbol_str = a:matchobj[0]
+    let l:zhuyin_str = a:matchobj[0]
 
     " The single quote key only triggers the handler,
     " not insert any chars
     if a:trigger != ''''
-        let l:symbol_str .= zhuyin_utils#key_to_code(a:trigger)
+        let l:zhuyin_str .= zhuyin_utils#key_to_code(a:trigger)
     endif
 
     " No phonetic symbol given, just return it back
-    if match(l:symbol_str, '\v^ *$') != -1
-        return [l:symbol_str]
+    if match(l:zhuyin_str, '\v^ *$') != -1
+        return [l:zhuyin_str]
     endif
 
-    let l:code_list = zhuyin_utils#ZhuyinStr2CodeList(l:symbol_str)
+    let l:res = zhuyin_utils#ParseZhuyinStr(l:zhuyin_str)
+    let l:zhuyin_list = l:res['zhuyin']
+    let l:code_list = l:res['code']
     let l:res = ime_phonetic_core#handler(l:code_list, a:trigger == '''')
-    return [l:symbol_str] + map(l:res,
-                \ '{'.
-                \ '"word": v:val[0] . zhuyin_utils#CodeList2ZhuyinStr(v:val[1]),'.
-                \ '"abbr": v:val[0]'.
+    let l:zll = len(l:zhuyin_list)
+    return [join(l:zhuyin_list, '')] + map(l:res,
+                \ '{' .
+                \ '"word": v:val[0] . join(l:zhuyin_list[(l:zll - len(v:val[1])):], ""),' .
+                \ '"abbr": v:val[0]' .
                 \ '}')
 endfunction
 

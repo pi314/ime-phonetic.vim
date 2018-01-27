@@ -11,12 +11,6 @@ Before ([UT] setup):
   call ime_phonetic_core#_InjectTableForTesting(Table, 2)
 
 
-Execute ([UT] Utility: ime_phonetic_core#_GetAllKeyStartsWith):
-  let Testee = function('ime_phonetic_core#_GetAllKeyStartsWith')
-  AssertEqual Testee(Table, 'h'),   ['hk4', 'hl3']
-  AssertEqual Testee(Table, 'g4'),  ['g4']
-
-
 Execute ([UT] Utility: ime_phonetic_core#_GetBestWord):
   let Testee = function('ime_phonetic_core#_GetBestWord')
   AssertEqual Testee(['hk4']),                   {'w': '策', 'f': 6428}
