@@ -1,0 +1,42 @@
+Execute ([UT] ime_pinyin#ParsePinyinStr()):
+  let Testee = function('ime_pinyin#ParsePinyinStr')
+  AssertEqual Testee(''),                         {'pinyin': [],
+                                                  \'code': []}
+  AssertEqual Testee('ce'),                       {'pinyin': ['ce'],
+                                                  \'code': ['hk']}
+  AssertEqual Testee('ceshi'),                    {'pinyin': ['ce', 'shi'],
+                                                  \'code': ['hk', 'g']}
+  AssertEqual Testee('shice'),                    {'pinyin': ['shi', 'ce'],
+                                                  \'code': ['g', 'hk']}
+  AssertEqual Testee('shi ce'),                   {'pinyin': ['shi', 'ce'],
+                                                  \'code': ['g', 'hk']}
+  AssertEqual Testee('shi c e'),                  {'pinyin': ['shi', 'c', 'e'],
+                                                  \'code': [
+                                                      \ 'g',
+                                                      \ ['h', 'h.', 'h/', 'h0',
+                                                          \ 'h8', 'h9', 'h;', 'hj',
+                                                          \ 'hj/', 'hj0', 'hji', 'hjo',
+                                                          \ 'hjp', 'hk', 'hl', 'hp',
+                                                          \ 't', 't.', 't/', 't0',
+                                                          \ 't8', 't9', 't;', 'tj',
+                                                          \ 'tj/', 'tj0', 'tj8',
+                                                          \ 'tj9', 'tj;', 'tji',
+                                                          \ 'tjo', 'tjp', 'tk', 'tl',
+                                                          \ 'tp'],
+                                                      \ 'k']}
+  AssertEqual Testee('ceshizhongwen'),            {'pinyin': ['ce', 'shi', 'zhong', 'wen'],
+                                                  \'code': ['hk', 'g', '5j/', 'jp']}
+  AssertEqual Testee('du'),                       {'pinyin': ['du'],
+                                                  \'code': ['2j']}
+  AssertEqual Testee('wude'),                     {'pinyin': ['wu', 'de'],
+                                                  \'code': ['j', '2k']}
+  AssertEqual Testee('zhiyi'),                    {'pinyin': ['zhi', 'yi'],
+                                                  \'code': ['5', 'u']}
+  AssertEqual Testee('ererer'),                   {'pinyin': ['er', 'er', 'er'],
+                                                  \'code': ['-', '-', '-']}
+  AssertEqual Testee('yidingdianer'),             {'pinyin': ['yi', 'ding', 'dian', 'er'],
+                                                  \'code': ['u', '2u/', '2u0', '-']}
+  AssertEqual Testee('yixie'),                    {'pinyin': ['yi', 'xie'],
+                                                  \'code': ['u', 'vu,']}
+  AssertEqual Testee('zhu'),                      {'pinyin': ['zhu'],
+                                                  \'code': ['5j']}

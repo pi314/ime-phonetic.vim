@@ -1,0 +1,48 @@
+Execute ([UT] ime_zhuyin#ParseZhuyinStr()):
+  let Testee = function('ime_zhuyin#ParseZhuyinStr')
+
+  AssertEqual Testee(''),                         {'zhuyin': [],
+                                                  \'code': []}
+  AssertEqual Testee('ㄘㄜ'),                     {'zhuyin': ['ㄘㄜ'],
+                                                  \'code': ['hk']}
+  AssertEqual Testee('ㄘㄜˋ'),                    {'zhuyin': ['ㄘㄜˋ'],
+                                                  \'code': ['hk4']}
+  AssertEqual Testee('ㄘㄜㄕ'),                   {'zhuyin': ['ㄘㄜ', 'ㄕ'],
+                                                  \'code': ['hk', 'g']}
+  AssertEqual Testee('ㄘㄜˋㄕˋ'),                 {'zhuyin': ['ㄘㄜˋ', 'ㄕˋ'],
+                                                  \'code': ['hk4', 'g4']}
+  AssertEqual Testee('ㄕㄘㄜ'),                   {'zhuyin': ['ㄕ', 'ㄘㄜ'],
+                                                  \'code': ['g', 'hk']}
+  AssertEqual Testee('ㄕㄘˋㄜ'),                  {'zhuyin': ['ㄕ', 'ㄘˋ', 'ㄜ'],
+                                                  \'code': ['g', 'h4', 'k']}
+  AssertEqual Testee('ㄘㄜˋㄕˋㄓㄨㄥ ㄨㄣˊ'),     {'zhuyin': ['ㄘㄜˋ', 'ㄕˋ', 'ㄓㄨㄥ ', 'ㄨㄣˊ'],
+                                                  \'code': ['hk4', 'g4', '5j/ ', 'jp6']}
+  AssertEqual Testee('ㄉㄨ'),                     {'zhuyin': ['ㄉㄨ'],
+                                                  \'code': ['2j']}
+  AssertEqual Testee('ㄏㄉㄨ'),                   {'zhuyin': ['ㄏ', 'ㄉㄨ'],
+                                                  \'code': [
+                                                    \ ['c.', 'c/', 'c0',
+                                                    \ 'c8', 'c9', 'c;', 'ca',
+                                                    \ 'cj', 'cj/', 'cj0', 'cj8',
+                                                    \ 'cj9', 'cj;', 'cji', 'cjo',
+                                                    \ 'cjp', 'ck', 'cl', 'co',
+                                                    \ 'cp'],
+                                                    \ '2j']}
+  AssertEqual Testee('ㄨㄉ'),                     {'zhuyin': ['ㄨ', 'ㄉ'],
+                                                  \'code': ['j', 
+                                                    \ ['2.', '2/', '20', '28',
+                                                    \ '29', '2;', '2j', '2j/',
+                                                    \ '2j0', '2ji', '2jo',
+                                                    \ '2jp', '2k', '2l', '2o',
+                                                    \ '2p', '2u', '2u,', '2u.',
+                                                    \ '2u/', '2u0', '2u8', '2ul']]}
+  AssertEqual Testee('ㄓㄧ'),                     {'zhuyin': ['ㄓ', 'ㄧ'],
+                                                  \'code': ['5', 'u']}
+  AssertEqual Testee('ㄦㄦㄦ'),                   {'zhuyin': ['ㄦ', 'ㄦ', 'ㄦ'],
+                                                  \'code': ['-', '-', '-']}
+  AssertEqual Testee('ㄧㄉㄧㄥㄉㄧㄢˇㄦˊ'),       {'zhuyin': ['ㄧ', 'ㄉㄧㄥ', 'ㄉㄧㄢˇ', 'ㄦˊ'],
+                                                  \'code': ['u', '2u/', '2u03', '-6']}
+  AssertEqual Testee('ㄧㄒㄧㄝ'),                 {'zhuyin': ['ㄧ', 'ㄒㄧㄝ'],
+                                                  \'code': ['u', 'vu,']}
+  AssertEqual Testee('ㄓㄨ'),                     {'zhuyin': ['ㄓㄨ'],
+                                                  \'code': ['5j']}
