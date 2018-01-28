@@ -116,6 +116,14 @@ ime-phonetic.vim 使用了 Dynamic Programming，搭配詞庫中的詞頻來選�
 根據 ``g:ime_phonetic_cache_size`` 的設定，超出大小以後，最舊的項目會被優先刪除
 
 
+特別感謝
+-------------------------------------------------------------------------------
+感謝 iblis_ 以及 Pellaeon_ 提供拼音輸入的使用者體驗。
+
+..  _iblis: https://github.com/iblis17/
+..  _Pellaeon: https://github.com/pellaeon
+
+
 授權
 -------------------------------------------------------------------------------
 本軟體使用 2-clause BSD license 發佈，請參考 LICENSE.txt
