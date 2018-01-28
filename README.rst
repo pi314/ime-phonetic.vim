@@ -55,17 +55,23 @@ ime-phonetic.vim 是 `ime.vim <https://github.com/pi314/ime.vim>`_ 的 standalon
     let g:ime_phonetic_cache_size = 2000
 
   - ime-phonetic.vim 會對先前搜尋過的詞句做快取，以加速詞句搜尋
+  - 快取並不會寫入檔案，關閉 Vim 以後就會消失
 
 * 自訂詞庫::
 
     let g:ime_phonetic_custom_table = '~/.phonetic.table'
 
   - 此設定沒有預設值，請在需要時自行設定
-  - 詞庫檔案的格式為::
+  - 加入的新詞會被排在第一順位
+  - 詞庫檔案的格式為「詞 拼音」或是「詞 注音」::
 
-      不要 1j6ul4
-      哇呼 j84cj
       #這是註解
+      妹紙 meizhi
+      面癱 ㄇㄧㄢˋㄊㄢ_
+
+    + 由於詞庫是共用的，所以用注音加入的詞，在拼音也可以輸入
+    + 底線 (``_``) 可以用來代表空白字元
+    + 若用拼音來定義新詞，聲調的資訊將會遺失
 
 本套件仍然在開發中，有一些已知的問題，若發現問題或是有開發想法，歡迎開 issue。
 

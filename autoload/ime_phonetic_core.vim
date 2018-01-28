@@ -32,7 +32,7 @@ function! s:get_all_sound_comb (table, key) " {{{
     endif
 
     return filter(
-                \ [a:key.' ', a:key.'3', a:key.'4', a:key.'6', a:key.'7'],
+                \ [a:key, a:key.' ', a:key.'3', a:key.'4', a:key.'6', a:key.'7'],
                 \ 'has_key(a:table, v:val)')
 endfunction " }}}
 
