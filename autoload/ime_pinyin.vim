@@ -535,6 +535,7 @@ function! ime_pinyin#info ()
     \ 'description': 'Pinyin input mode',
     \ 'pattern':  '\v%([a-zA-Z ]*)$',
     \ 'handler': function('ime_pinyin#handler'),
-    \ 'trigger': split('''0123456789abcdefghijklmnopqrstuvwxyz', '\zs') + keys(s:pinyin_punctuation),
+    \ 'trigger': split('''abcdefghijklmnopqrstuvwxyz', '\zs') + keys(s:pinyin_punctuation),
+    \ 'choice': [''] + split('123456789', '\zs'),
     \ }
 endfunction
