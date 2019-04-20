@@ -536,13 +536,17 @@ function! ime_zhuyin#handler (matchobj, trigger)
 endfunction
 
 
-function ime_zhuyin#submode (switch)
-    if a:switch == '' || s:punctuation_state == 1
+function ime_zhuyin#menu (...)
+    if a:0 == 0
+        let s:punctuation_state = 1 - s:punctuation_state
+    elseif a:1 == ''
         let s:punctuation_state = 0
-        call ime#icon('phonetic', '[注]')
-    elseif s:punctuation_state == 0
-        let s:punctuation_state = 1
-        call ime#icon('phonetic', '[，]')
+    endif
+
+    if s:punctuation_state == 0
+        call ime#icon('zhuyin', '[注]')
+    else
+        call ime#icon('zhuyin', '[，]')
     endif
 endfunction
 
@@ -555,7 +559,7 @@ function! ime_zhuyin#info ()
     \ 'pattern':  '\v%(|:|['. s:symbols .']['. s:symbols .' ]*)$',
     \ 'handler': function('ime_zhuyin#handler'),
     \ 'trigger': s:code_set + [' ', '''', ':'],
-    \ 'submode':function('ime_zhuyin#submode'),
+    \ 'menu': function('ime_zhuyin#menu'),
     \ }
 endfunction
 
